@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DocScannerCloud</string>
+    <string name="align_hint">Align the document inside the frame</string>
+    <string name="mode_id_card">ID card</string>
+    <string name="mode_passport">Passport</string>
+    <string name="capture">Capture</string>
+    <string name="saved_to">Saved to Pictures/DocScanner/%1$s</string>
+    <string name="save_failed">Could not save the photo</string>
+    <string name="capture_failed">Capture failed: %1$s</string>
+    <string name="camera_start_failed">Could not start camera: %1$s</string>
+    <string name="camera_permission_denied">Camera permission is required to scan documents</string>
+    <string name="glare_warning">⚠ Glare detected — tilt the document or move away from direct light</string>
+    <string name="glare_capture_warning">Glare on the document — the photo may have reflections</string>
+    <string name="saved_to_uploading">Saved to Pictures/DocScanner/%1$s — uploading to Drive</string>
+    <string name="drive_sync_button">Google Drive sync settings</string>
+    <string name="drive_sync_title">Google Drive sync</string>
+    <string name="drive_sync_enable">Upload a copy of each capture</string>
+    <string name="drive_folder_hint">Drive folder name</string>
+    <string name="drive_sync_note">Copies go to this folder in My Drive (the app creates it if needed). ID and passport scans are sensitive — only enable this on a Google account you trust.</string>
+    <string name="drive_sync_save">Save</string>
+    <string name="drive_sync_cancel">Cancel</string>
+    <string name="drive_sync_enabled">Drive sync enabled</string>
+    <string name="drive_sync_disabled">Drive sync turned off</string>
+    <string name="drive_sync_auth_failed">Google Drive authorization failed — sync stays off</string>
+    <string name="logo_synapse">SYNAPSE</string>
+    <string name="logo_asia">ASIA</string>
+    <string name="logo_content_desc">Synapse Asia logo</string>
+</resources>
