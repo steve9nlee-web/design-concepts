@@ -1,0 +1,126 @@
+// Curated country reference table used for two heuristics:
+//  1. Tagging RSS news articles with a likely country by keyword match on title/summary.
+//  2. Mapping GDELT's ActionGeo_CountryCode (FIPS 10-4) to a display name + centroid.
+//
+// This is a best-effort MVP heuristic, not a full gazetteer. It covers the countries
+// that dominate global news/event volume; anything not listed here is simply skipped
+// rather than mis-tagged. Extend this table to widen coverage.
+
+pub struct CountryInfo {
+    pub iso2: &'static str,
+    pub fips: &'static str,
+    pub name: &'static str,
+    pub aliases: &'static [&'static str],
+    pub lat: f64,
+    pub lon: f64,
+}
+
+pub static COUNTRIES: &[CountryInfo] = &[
+    CountryInfo { iso2: "US", fips: "US", name: "United States", aliases: &["united states", "u.s.", "usa", "washington"], lat: 39.8, lon: -98.6 },
+    CountryInfo { iso2: "CN", fips: "CH", name: "China", aliases: &["china", "beijing", "chinese"], lat: 35.9, lon: 104.2 },
+    CountryInfo { iso2: "RU", fips: "RS", name: "Russia", aliases: &["russia", "moscow", "russian", "kremlin"], lat: 61.5, lon: 105.3 },
+    CountryInfo { iso2: "UA", fips: "UP", name: "Ukraine", aliases: &["ukraine", "kyiv", "kiev", "ukrainian"], lat: 48.4, lon: 31.2 },
+    CountryInfo { iso2: "GB", fips: "UK", name: "United Kingdom", aliases: &["united kingdom", "britain", "london", "u.k.", "british"], lat: 55.4, lon: -3.4 },
+    CountryInfo { iso2: "FR", fips: "FR", name: "France", aliases: &["france", "paris", "french"], lat: 46.6, lon: 2.2 },
+    CountryInfo { iso2: "DE", fips: "GM", name: "Germany", aliases: &["germany", "berlin", "german"], lat: 51.2, lon: 10.4 },
+    CountryInfo { iso2: "IT", fips: "IT", name: "Italy", aliases: &["italy", "rome", "italian"], lat: 42.8, lon: 12.8 },
+    CountryInfo { iso2: "ES", fips: "SP", name: "Spain", aliases: &["spain", "madrid", "spanish"], lat: 40.5, lon: -3.7 },
+    CountryInfo { iso2: "PL", fips: "PL", name: "Poland", aliases: &["poland", "warsaw", "polish"], lat: 51.9, lon: 19.1 },
+    CountryInfo { iso2: "IL", fips: "IS", name: "Israel", aliases: &["israel", "israeli", "tel aviv", "jerusalem"], lat: 31.0, lon: 34.8 },
+    CountryInfo { iso2: "PS", fips: "GZ", name: "Palestine", aliases: &["gaza", "palestinian", "west bank", "palestine"], lat: 31.9, lon: 35.2 },
+    CountryInfo { iso2: "IR", fips: "IR", name: "Iran", aliases: &["iran", "tehran", "iranian"], lat: 32.4, lon: 53.7 },
+    CountryInfo { iso2: "IQ", fips: "IZ", name: "Iraq", aliases: &["iraq", "baghdad", "iraqi"], lat: 33.2, lon: 43.7 },
+    CountryInfo { iso2: "SY", fips: "SY", name: "Syria", aliases: &["syria", "damascus", "syrian"], lat: 34.8, lon: 38.9 },
+    CountryInfo { iso2: "SA", fips: "SA", name: "Saudi Arabia", aliases: &["saudi arabia", "riyadh", "saudi"], lat: 23.9, lon: 45.1 },
+    CountryInfo { iso2: "TR", fips: "TU", name: "Turkey", aliases: &["turkey", "ankara", "turkish", "istanbul"], lat: 38.9, lon: 35.2 },
+    CountryInfo { iso2: "EG", fips: "EG", name: "Egypt", aliases: &["egypt", "cairo", "egyptian"], lat: 26.8, lon: 30.8 },
+    CountryInfo { iso2: "YE", fips: "YM", name: "Yemen", aliases: &["yemen", "houthi", "yemeni"], lat: 15.6, lon: 48.0 },
+    CountryInfo { iso2: "LB", fips: "LE", name: "Lebanon", aliases: &["lebanon", "beirut", "hezbollah", "lebanese"], lat: 33.9, lon: 35.9 },
+    CountryInfo { iso2: "JO", fips: "JO", name: "Jordan", aliases: &["jordan", "amman", "jordanian"], lat: 30.6, lon: 36.2 },
+    CountryInfo { iso2: "AE", fips: "AE", name: "United Arab Emirates", aliases: &["uae", "united arab emirates", "dubai", "abu dhabi"], lat: 23.4, lon: 53.8 },
+    CountryInfo { iso2: "IN", fips: "IN", name: "India", aliases: &["india", "delhi", "indian", "mumbai"], lat: 20.6, lon: 79.0 },
+    CountryInfo { iso2: "PK", fips: "PK", name: "Pakistan", aliases: &["pakistan", "islamabad", "pakistani"], lat: 30.4, lon: 69.3 },
+    CountryInfo { iso2: "AF", fips: "AF", name: "Afghanistan", aliases: &["afghanistan", "kabul", "afghan", "taliban"], lat: 33.9, lon: 67.7 },
+    CountryInfo { iso2: "BD", fips: "BG", name: "Bangladesh", aliases: &["bangladesh", "dhaka"], lat: 23.7, lon: 90.4 },
+    CountryInfo { iso2: "JP", fips: "JA", name: "Japan", aliases: &["japan", "tokyo", "japanese"], lat: 36.2, lon: 138.3 },
+    CountryInfo { iso2: "KR", fips: "KS", name: "South Korea", aliases: &["south korea", "seoul", "korean"], lat: 35.9, lon: 127.8 },
+    CountryInfo { iso2: "KP", fips: "KN", name: "North Korea", aliases: &["north korea", "pyongyang"], lat: 40.3, lon: 127.5 },
+    CountryInfo { iso2: "TW", fips: "TW", name: "Taiwan", aliases: &["taiwan", "taipei", "taiwanese"], lat: 23.7, lon: 121.0 },
+    CountryInfo { iso2: "PH", fips: "RP", name: "Philippines", aliases: &["philippines", "manila", "filipino"], lat: 12.9, lon: 121.8 },
+    CountryInfo { iso2: "VN", fips: "VM", name: "Vietnam", aliases: &["vietnam", "hanoi", "vietnamese"], lat: 14.1, lon: 108.3 },
+    CountryInfo { iso2: "TH", fips: "TH", name: "Thailand", aliases: &["thailand", "bangkok", "thai"], lat: 15.9, lon: 100.9 },
+    CountryInfo { iso2: "MM", fips: "BM", name: "Myanmar", aliases: &["myanmar", "burma", "yangon", "naypyidaw"], lat: 21.9, lon: 95.9 },
+    CountryInfo { iso2: "ID", fips: "ID", name: "Indonesia", aliases: &["indonesia", "jakarta", "indonesian"], lat: -0.8, lon: 113.9 },
+    CountryInfo { iso2: "MY", fips: "MY", name: "Malaysia", aliases: &["malaysia", "kuala lumpur", "malaysian"], lat: 4.2, lon: 101.9 },
+    CountryInfo { iso2: "AU", fips: "AS", name: "Australia", aliases: &["australia", "canberra", "sydney", "australian"], lat: -25.3, lon: 133.8 },
+    CountryInfo { iso2: "NZ", fips: "NZ", name: "New Zealand", aliases: &["new zealand", "wellington"], lat: -41.0, lon: 174.9 },
+    CountryInfo { iso2: "CA", fips: "CA", name: "Canada", aliases: &["canada", "ottawa", "canadian"], lat: 56.1, lon: -106.3 },
+    CountryInfo { iso2: "MX", fips: "MX", name: "Mexico", aliases: &["mexico", "mexico city", "mexican"], lat: 23.6, lon: -102.5 },
+    CountryInfo { iso2: "BR", fips: "BR", name: "Brazil", aliases: &["brazil", "brasilia", "brazilian"], lat: -14.2, lon: -51.9 },
+    CountryInfo { iso2: "AR", fips: "AR", name: "Argentina", aliases: &["argentina", "buenos aires", "argentine"], lat: -38.4, lon: -63.6 },
+    CountryInfo { iso2: "VE", fips: "VE", name: "Venezuela", aliases: &["venezuela", "caracas", "venezuelan"], lat: 6.4, lon: -66.6 },
+    CountryInfo { iso2: "CO", fips: "CO", name: "Colombia", aliases: &["colombia", "bogota", "colombian"], lat: 4.6, lon: -74.3 },
+    CountryInfo { iso2: "CL", fips: "CI", name: "Chile", aliases: &["chile", "santiago", "chilean"], lat: -35.7, lon: -71.5 },
+    CountryInfo { iso2: "PE", fips: "PE", name: "Peru", aliases: &["peru", "lima", "peruvian"], lat: -9.2, lon: -75.0 },
+    CountryInfo { iso2: "CU", fips: "CU", name: "Cuba", aliases: &["cuba", "havana", "cuban"], lat: 21.5, lon: -77.8 },
+    CountryInfo { iso2: "HT", fips: "HA", name: "Haiti", aliases: &["haiti", "port-au-prince", "haitian"], lat: 18.97, lon: -72.29 },
+    CountryInfo { iso2: "ZA", fips: "SF", name: "South Africa", aliases: &["south africa", "pretoria", "johannesburg"], lat: -30.6, lon: 22.9 },
+    CountryInfo { iso2: "NG", fips: "NI", name: "Nigeria", aliases: &["nigeria", "abuja", "lagos", "nigerian"], lat: 9.1, lon: 8.7 },
+    CountryInfo { iso2: "ET", fips: "ET", name: "Ethiopia", aliases: &["ethiopia", "addis ababa", "ethiopian"], lat: 9.1, lon: 40.5 },
+    CountryInfo { iso2: "KE", fips: "KE", name: "Kenya", aliases: &["kenya", "nairobi", "kenyan"], lat: -0.02, lon: 37.9 },
+    CountryInfo { iso2: "SD", fips: "SU", name: "Sudan", aliases: &["sudan", "khartoum", "sudanese"], lat: 12.9, lon: 30.2 },
+    CountryInfo { iso2: "SS", fips: "OD", name: "South Sudan", aliases: &["south sudan", "juba"], lat: 6.9, lon: 31.3 },
+    CountryInfo { iso2: "SO", fips: "SO", name: "Somalia", aliases: &["somalia", "mogadishu", "somali", "al-shabaab"], lat: 5.2, lon: 46.2 },
+    CountryInfo { iso2: "ML", fips: "ML", name: "Mali", aliases: &["mali", "bamako", "malian"], lat: 17.6, lon: -4.0 },
+    CountryInfo { iso2: "NE", fips: "NG", name: "Niger", aliases: &["niger", "niamey"], lat: 17.6, lon: 8.1 },
+    CountryInfo { iso2: "CD", fips: "CG", name: "DR Congo", aliases: &["congo", "kinshasa", "drc", "congolese"], lat: -4.0, lon: 21.8 },
+    CountryInfo { iso2: "CM", fips: "CM", name: "Cameroon", aliases: &["cameroon", "yaounde"], lat: 5.9, lon: 12.7 },
+    CountryInfo { iso2: "GH", fips: "GH", name: "Ghana", aliases: &["ghana", "accra"], lat: 7.9, lon: -1.0 },
+    CountryInfo { iso2: "SN", fips: "SG", name: "Senegal", aliases: &["senegal", "dakar"], lat: 14.5, lon: -14.5 },
+    CountryInfo { iso2: "MA", fips: "MO", name: "Morocco", aliases: &["morocco", "rabat", "moroccan"], lat: 31.8, lon: -7.1 },
+    CountryInfo { iso2: "DZ", fips: "AG", name: "Algeria", aliases: &["algeria", "algiers", "algerian"], lat: 28.0, lon: 1.7 },
+    CountryInfo { iso2: "LY", fips: "LY", name: "Libya", aliases: &["libya", "tripoli", "libyan"], lat: 26.3, lon: 17.2 },
+    CountryInfo { iso2: "TN", fips: "TS", name: "Tunisia", aliases: &["tunisia", "tunis", "tunisian"], lat: 33.9, lon: 9.5 },
+    CountryInfo { iso2: "SE", fips: "SW", name: "Sweden", aliases: &["sweden", "stockholm", "swedish"], lat: 60.1, lon: 18.6 },
+    CountryInfo { iso2: "NO", fips: "NO", name: "Norway", aliases: &["norway", "oslo", "norwegian"], lat: 60.5, lon: 8.5 },
+    CountryInfo { iso2: "FI", fips: "FI", name: "Finland", aliases: &["finland", "helsinki", "finnish"], lat: 61.9, lon: 25.7 },
+    CountryInfo { iso2: "DK", fips: "DA", name: "Denmark", aliases: &["denmark", "copenhagen", "danish"], lat: 56.3, lon: 9.5 },
+    CountryInfo { iso2: "NL", fips: "NL", name: "Netherlands", aliases: &["netherlands", "amsterdam", "the hague", "dutch"], lat: 52.1, lon: 5.3 },
+    CountryInfo { iso2: "BE", fips: "BE", name: "Belgium", aliases: &["belgium", "brussels", "belgian"], lat: 50.5, lon: 4.5 },
+    CountryInfo { iso2: "CH", fips: "SZ", name: "Switzerland", aliases: &["switzerland", "bern", "geneva", "swiss"], lat: 46.8, lon: 8.2 },
+    CountryInfo { iso2: "AT", fips: "AU", name: "Austria", aliases: &["austria", "vienna", "austrian"], lat: 47.5, lon: 14.6 },
+    CountryInfo { iso2: "GR", fips: "GR", name: "Greece", aliases: &["greece", "athens", "greek"], lat: 39.1, lon: 21.8 },
+    CountryInfo { iso2: "PT", fips: "PO", name: "Portugal", aliases: &["portugal", "lisbon", "portuguese"], lat: 39.4, lon: -8.2 },
+    CountryInfo { iso2: "IE", fips: "EI", name: "Ireland", aliases: &["ireland", "dublin", "irish"], lat: 53.4, lon: -8.2 },
+    CountryInfo { iso2: "RO", fips: "RO", name: "Romania", aliases: &["romania", "bucharest", "romanian"], lat: 45.9, lon: 24.9 },
+    CountryInfo { iso2: "HU", fips: "HU", name: "Hungary", aliases: &["hungary", "budapest", "hungarian"], lat: 47.1, lon: 19.5 },
+    CountryInfo { iso2: "CZ", fips: "EZ", name: "Czech Republic", aliases: &["czech republic", "prague", "czechia"], lat: 49.8, lon: 15.5 },
+    CountryInfo { iso2: "BY", fips: "BO", name: "Belarus", aliases: &["belarus", "minsk", "belarusian"], lat: 53.7, lon: 27.9 },
+    CountryInfo { iso2: "GE", fips: "GG", name: "Georgia", aliases: &["georgia", "tbilisi", "georgian"], lat: 42.3, lon: 43.4 },
+    CountryInfo { iso2: "AM", fips: "AM", name: "Armenia", aliases: &["armenia", "yerevan", "armenian"], lat: 40.1, lon: 45.0 },
+    CountryInfo { iso2: "AZ", fips: "AJ", name: "Azerbaijan", aliases: &["azerbaijan", "baku", "azerbaijani"], lat: 40.1, lon: 47.6 },
+    CountryInfo { iso2: "KZ", fips: "KZ", name: "Kazakhstan", aliases: &["kazakhstan", "astana", "kazakh"], lat: 48.0, lon: 66.9 },
+    CountryInfo { iso2: "UZ", fips: "UZ", name: "Uzbekistan", aliases: &["uzbekistan", "tashkent"], lat: 41.4, lon: 64.6 },
+    CountryInfo { iso2: "MD", fips: "MD", name: "Moldova", aliases: &["moldova", "chisinau"], lat: 47.4, lon: 28.4 },
+    CountryInfo { iso2: "RS", fips: "RI", name: "Serbia", aliases: &["serbia", "belgrade", "serbian"], lat: 44.0, lon: 21.0 },
+    CountryInfo { iso2: "XK", fips: "KV", name: "Kosovo", aliases: &["kosovo", "pristina"], lat: 42.6, lon: 20.9 },
+    CountryInfo { iso2: "BA", fips: "BK", name: "Bosnia and Herzegovina", aliases: &["bosnia", "sarajevo"], lat: 43.9, lon: 17.7 },
+    CountryInfo { iso2: "FJ", fips: "FJ", name: "Fiji", aliases: &["fiji", "suva"], lat: -17.7, lon: 178.1 },
+    CountryInfo { iso2: "SG", fips: "SN", name: "Singapore", aliases: &["singapore", "singaporean"], lat: 1.35, lon: 103.8 },
+    CountryInfo { iso2: "QA", fips: "QA", name: "Qatar", aliases: &["qatar", "doha", "qatari"], lat: 25.4, lon: 51.2 },
+    CountryInfo { iso2: "KW", fips: "KU", name: "Kuwait", aliases: &["kuwait", "kuwaiti"], lat: 29.3, lon: 47.5 },
+    CountryInfo { iso2: "OM", fips: "MU", name: "Oman", aliases: &["oman", "muscat"], lat: 21.5, lon: 55.9 },
+    CountryInfo { iso2: "BH", fips: "BA", name: "Bahrain", aliases: &["bahrain", "manama"], lat: 26.0, lon: 50.6 },
+    CountryInfo { iso2: "CY", fips: "CY", name: "Cyprus", aliases: &["cyprus", "nicosia", "cypriot"], lat: 35.1, lon: 33.4 },
+];
+
+/// Best-effort keyword tagging: scan `text` for a known country alias and
+/// return the first match. Case-insensitive whole-word-ish matching.
+pub fn guess_country(text: &str) -> Option<&'static CountryInfo> {
+    let lower = text.to_lowercase();
+    COUNTRIES.iter().find(|c| c.aliases.iter().any(|a| lower.contains(a)))
+}
+
+pub fn by_fips(code: &str) -> Option<&'static CountryInfo> {
+    COUNTRIES.iter().find(|c| c.fips.eq_ignore_ascii_case(code))
+}
