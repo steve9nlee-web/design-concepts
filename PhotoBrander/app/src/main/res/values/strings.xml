@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhotoBrander</string>
+    <string name="settings">Settings</string>
+
+    <string name="main_intro">Upload a photo, describe the image you want, and PhotoBrander sends it to your n8n workflow. The AI generates a new photo with your wording and automatically adds your company logo and details from Settings.</string>
+    <string name="pick_photo">Choose photo</string>
+    <string name="take_photo">Take photo</string>
+    <string name="selected_photo">Selected photo</string>
+    <string name="description_hint">Describe the photo you want (wording, style, changes)</string>
+    <string name="generate">Generate branded photo</string>
+    <string name="result_label">Generated photo</string>
+    <string name="save_to_gallery">Save to gallery</string>
+    <string name="saved_to_gallery">Saved to Pictures/PhotoBrander</string>
+
+    <string name="status_configure_first">Open Settings first to set your n8n webhook URL, company logo and details.</string>
+    <string name="status_photo_ready">Photo ready. Add a description and tap Generate.</string>
+    <string name="status_uploading">Uploading photo to n8n…</string>
+    <string name="status_generating">Generating branded photo… this can take a minute.</string>
+    <string name="status_done">Done! Your branded photo is ready.</string>
+    <string name="status_failed">Failed: %1$s</string>
+
+    <string name="error_no_photo">Please choose or take a photo first.</string>
+    <string name="error_no_description">Please enter a description.</string>
+    <string name="error_not_configured">Set your n8n webhook URL in Settings first.</string>
+    <string name="error_bad_image">The workflow did not return a valid image.</string>
+    <string name="error_read_photo">Could not read the selected photo.</string>
+    <string name="error_save_failed">Could not save image: %1$s</string>
+    <string name="error_invalid_url">Webhook URL must start with http:// or https://</string>
+
+    <string name="webhook_url_hint">n8n webhook URL (production)</string>
+    <string name="company_name_hint">Company name</string>
+    <string name="company_details_hint">Company details (phone, website, address…)</string>
+    <string name="pick_logo">Choose company logo</string>
+    <string name="logo_preview">Company logo preview</string>
+    <string name="logo_saved">Logo saved</string>
+    <string name="logo_save_failed">Could not save logo</string>
+    <string name="save_settings">Save settings</string>
+    <string name="settings_saved">Settings saved</string>
+</resources>
