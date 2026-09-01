@@ -215,6 +215,7 @@
   <div class="card checkin">
     <div class="clock-now" id="clockNow">--:--:--</div>
     <div class="shift-line" id="shiftLine">No shift rostered today</div>
+    <div class="shift-line" id="autoLine" style="display:none;color:var(--blue);font-weight:600"></div>
     <div class="ci-btns">
       <button class="btn btn-in" id="btnIn" onclick="clockIn()">Clock In</button>
       <button class="btn btn-out" id="btnOut" onclick="clockOut()">Clock Out</button>
@@ -280,6 +281,24 @@
       <label class="fl">Phone</label>
       <input type="tel" id="pPhone" placeholder="+60 12-345 6789">
       <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="saveProfile()">Save profile</button></div>
+    </div>
+    <div class="card">
+      <h3>Automatic WiFi clock-in / out</h3>
+      <div id="autoNoBridge" class="hint" style="display:none;margin:0">Available on the phone app only.</div>
+      <div id="autoCfg">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:600;font-size:14px">Enable auto clock</span>
+          <label class="switch"><input type="checkbox" id="acOn"><span class="slider"></span></label>
+        </div>
+        <p class="hint">Clock in when this phone joins the company WiFi, clock out after leaving it. Needs location permission ("Allow all the time") so Android lets the app read the WiFi name.</p>
+        <label class="fl">Company WiFi name (SSID)</label>
+        <input type="text" id="acSsid" placeholder="e.g. Company-Office">
+        <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="useCurrentWifi()">Use the WiFi I'm connected to now</button>
+        <label class="fl">Clock-out grace period (minutes)</label>
+        <input type="number" id="acGrace" min="0" max="120" value="10">
+        <p class="hint">Short WiFi drops (lifts, phone sleeping) within this period are ignored.</p>
+        <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="saveAutoCfg()">Save auto-clock settings</button></div>
+      </div>
     </div>
     <div class="card">
       <h3>Data</h3>
@@ -558,6 +577,13 @@ function renderHome(){
     ? ('Today\'s shift: '+rd.start+' – '+rd.end+' (grace '+roster.grace+' min)')
     : 'No shift rostered today';
 
+  var acfg = autoCfg();
+  var al = document.getElementById('autoLine');
+  if (acfg && acfg.enabled && acfg.ssid){
+    al.style.display = 'block';
+    al.textContent = '⚡ Auto clock on WiFi "'+acfg.ssid+'"';
+  } else al.style.display = 'none';
+
   var rec = todayRec();
   document.getElementById('ciIn').textContent = rec && rec.in ? rec.in : '--:--';
   document.getElementById('ciOut').textContent = rec && rec.out ? rec.out : '--:--';
@@ -642,8 +668,89 @@ function clockOut(){
   renderHome();
 }
 
+/* ================= WiFi auto clock ================= */
+function bridge(){ return (typeof AndroidBridge !== 'undefined') ? AndroidBridge : null; }
+function autoCfg(){
+  var b = bridge();
+  if (!b || !b.getAutoConfig) return null;
+  try { return JSON.parse(b.getAutoConfig() || '{}'); } catch(e){ return {}; }
+}
+function renderAutoCard(){
+  var b = bridge();
+  var has = b && b.getAutoConfig;
+  document.getElementById('autoNoBridge').style.display = has ? 'none' : 'block';
+  document.getElementById('autoCfg').style.display = has ? 'block' : 'none';
+  if (!has) return;
+  var cfg = autoCfg() || {};
+  document.getElementById('acOn').checked = !!cfg.enabled;
+  document.getElementById('acSsid').value = cfg.ssid || '';
+  document.getElementById('acGrace').value = (cfg.grace != null) ? cfg.grace : 10;
+}
+function useCurrentWifi(){
+  var b = bridge();
+  if (!b || !b.getCurrentSsid) return;
+  var ssid = b.getCurrentSsid();
+  if (ssid){ document.getElementById('acSsid').value = ssid; toast('WiFi detected: '+ssid); }
+  else if (b.hasLocation && !b.hasLocation()){
+    toast('Grant location permission first, then try again');
+    if (b.setAutoConfig) b.setAutoConfig(JSON.stringify({enabled:true, ssid:'', grace:10}));
+  } else {
+    toast('Not connected to WiFi, or Location Services is off');
+  }
+}
+function saveAutoCfg(){
+  var b = bridge();
+  if (!b || !b.setAutoConfig) return;
+  var on = document.getElementById('acOn').checked;
+  var ssid = document.getElementById('acSsid').value.trim();
+  var grace = Math.max(0, +document.getElementById('acGrace').value || 0);
+  if (on && !ssid){ toast('Enter the company WiFi name first'); return; }
+  b.setAutoConfig(JSON.stringify({enabled:on, ssid:ssid, grace:grace}));
+  toast(on ? 'Auto clock enabled for "'+ssid+'"' : 'Auto clock disabled');
+  renderHome();
+}
+function syncAutoEvents(){
+  var b = bridge();
+  if (!b || !b.getPendingEvents) return;
+  var evs;
+  try { evs = JSON.parse(b.getPendingEvents() || '[]'); } catch(e){ return; }
+  if (!evs.length) return;
+  var changed = false;
+  for (var i=0;i<evs.length;i++){
+    var ev = evs[i];
+    var d = new Date(ev.ts);
+    var key = todayKey(d);
+    var t = pad(d.getHours())+':'+pad(d.getMinutes());
+    var rec = null;
+    for (var j=0;j<att.length;j++) if (att[j].d===key){ rec = att[j]; break; }
+    if (ev.type === 'in'){
+      if (!rec){
+        var rd = rosterFor(key);
+        var late = rd && rd.on ? (minsOf(t) > minsOf(rd.start) + (+roster.grace||0)) : false;
+        att.push({d:key, in:t, out:null, late:late, loc:'Company WiFi', auto:true});
+        changed = true;
+      }
+    } else {
+      if (rec && rec.in && (!rec.out || minsOf(t) > minsOf(rec.out))){
+        rec.out = t; rec.auto = true; changed = true;
+      }
+    }
+  }
+  b.clearPendingEvents();
+  if (changed){
+    att.sort(function(a,c){ return a.d<c.d?1:-1; });
+    save(K.att, att);
+    if (currentPage==='home') renderHome();
+    if (currentPage==='attendance') renderAttendance();
+    toast('Attendance updated from WiFi auto clock');
+  }
+}
+setInterval(syncAutoEvents, 20000);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) syncAutoEvents(); });
+
 /* ================= Profile ================= */
 function renderProfile(){
+  renderAutoCard();
   document.getElementById('pName').value = profile.name || '';
   document.getElementById('pEmpId').value = profile.empId || '';
   document.getElementById('pJoined').value = profile.joined || '';
@@ -702,7 +809,7 @@ function renderAttendance(){
       + '<span>Clock in<b class="'+(a.late?'late-text':'')+'">'+(a.in||'--:--')+'</b></span>'
       + '<span>Clock out<b>'+(a.out||'--:--')+'</b></span>'
       + '<span>Total<b>'+dur+'</b></span>'
-      + (a.loc ? '<span>Location<b>&#128205;</b></span>' : '')
+      + (a.auto ? '<span>Mode<b>&#9889; Auto</b></span>' : (a.loc ? '<span>Location<b>&#128205;</b></span>' : ''))
       + '</div></div>';
   }
   document.getElementById('atHours').textContent = Math.round(mins/60*10)/10+'h';
@@ -1019,6 +1126,7 @@ function wipeAll(){
 /* ================= Boot ================= */
 loadAll();
 purgeOld();
+syncAutoEvents();
 if (!load(K.init,false)){
   save(K.init, true);
   loadDemo();

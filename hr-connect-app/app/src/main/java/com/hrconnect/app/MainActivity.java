@@ -79,6 +79,12 @@ public class MainActivity extends Activity {
         });
 
         webView.loadUrl("file:///android_asset/www/index.html");
+
+        // Resume WiFi auto-clock monitoring if the user enabled it.
+        org.json.JSONObject cfg = WifiClockService.readConfig(this);
+        if (cfg != null && cfg.optBoolean("enabled", false)) {
+            WifiClockService.start(this);
+        }
     }
 
     private boolean hasLocationPermission() {
@@ -138,7 +144,62 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String appVersion() {
-            return "1.0";
+            return "1.1";
+        }
+
+        /* ---------- WiFi auto clock-in/out ---------- */
+
+        @JavascriptInterface
+        public String getAutoConfig() {
+            org.json.JSONObject cfg = WifiClockService.readConfig(MainActivity.this);
+            return cfg == null ? "{}" : cfg.toString();
+        }
+
+        @JavascriptInterface
+        public void setAutoConfig(String json) {
+            getSharedPreferences(WifiClockService.PREFS, MODE_PRIVATE)
+                    .edit().putString(WifiClockService.KEY_CONFIG, json).apply();
+            org.json.JSONObject cfg = WifiClockService.readConfig(MainActivity.this);
+            final boolean enabled = cfg != null && cfg.optBoolean("enabled", false);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (enabled) {
+                        if (!hasLocationPermission()) {
+                            requestPermissions(new String[]{
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                            }, REQ_LOCATION);
+                        }
+                        WifiClockService.start(MainActivity.this);
+                    } else {
+                        stopService(new Intent(MainActivity.this, WifiClockService.class));
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public String getCurrentSsid() {
+            if (!hasLocationPermission()) return "";
+            return WifiClockService.currentSsid(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public boolean hasLocation() {
+            return hasLocationPermission();
+        }
+
+        @JavascriptInterface
+        public String getPendingEvents() {
+            return getSharedPreferences(WifiClockService.PREFS, MODE_PRIVATE)
+                    .getString(WifiClockService.KEY_EVENTS, "[]");
+        }
+
+        @JavascriptInterface
+        public void clearPendingEvents() {
+            getSharedPreferences(WifiClockService.PREFS, MODE_PRIVATE)
+                    .edit().putString(WifiClockService.KEY_EVENTS, "[]").apply();
         }
     }
 }

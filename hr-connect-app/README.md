@@ -11,6 +11,10 @@ phone (localStorage inside the app's WebView) — no server required.
 4. **Overtime** — apply with date, start/end time (duration auto-computed), reason and description; same approval flow and history tracking.
 5. **Check-In Panel** — clock in / clock out with the handphone, live clock, today's shift from the roster, worked-hours counter, optional GPS location stamp. Clocking in after shift start + grace period flags the day **LATE (red)**.
 6. **Rostered Hours** — weekly roster editor (per-day on/off, start/end times, late grace period), today's shift, weekly rostered-hours total, and a month calendar showing rostered (blue), worked (green) and late (red) days.
+7. **WiFi auto clock-in / out** (v1.1) — enable it in *Profile → Automatic WiFi clock-in / out*, set the company WiFi name (or tap "Use the WiFi I'm connected to now"). A background service then clocks the employee in when the phone joins that WiFi and clocks out after leaving it, with a configurable grace period (default 10 min) so brief drops are ignored. Auto records are marked ⚡ in Attendance, and the same late-flag rules apply.
+   - Android only reveals the WiFi name to apps with **location permission** — choose **"Allow all the time"** and keep Location Services on, or auto clock cannot see the network name.
+   - After a reboot the service restarts automatically. Some phone brands' battery savers can still stop background apps; exclude HR Connect from battery optimization for best reliability.
+   - A small permanent notification is shown while monitoring (an Android requirement for background services).
 
 Sample data is loaded on first launch so the app is explorable immediately —
 clear it with one tap from the dashboard banner or the Profile page.

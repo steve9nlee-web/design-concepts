@@ -57,8 +57,8 @@ usesFramework:
   tag: null
 version: 2.4.1
 versionInfo:
-  versionCode: '1'
-  versionName: '1.0'
+  versionCode: '2'
+  versionName: '1.1'
 YML
 
 echo "==> Building APK (apktool)"
