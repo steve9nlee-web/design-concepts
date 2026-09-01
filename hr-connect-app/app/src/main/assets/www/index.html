@@ -297,6 +297,22 @@
         <label class="fl">Clock-out grace period (minutes)</label>
         <input type="number" id="acGrace" min="0" max="120" value="10">
         <p class="hint">Short WiFi drops (lifts, phone sleeping) within this period are ignored.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+          <span style="font-weight:600;font-size:14px">GPS cross-check</span>
+          <label class="switch"><input type="checkbox" id="acGps" onchange="toggleGpsFields()"><span class="slider"></span></label>
+        </div>
+        <p class="hint">Extra security: only auto clock-in when the phone is also physically near the office — a home hotspot named like the office WiFi won't work.</p>
+        <div id="gpsFields" style="display:none">
+          <div class="row2">
+            <div><label class="fl">Office latitude</label><input type="text" id="acLat" placeholder="3.13900" inputmode="decimal"></div>
+            <div><label class="fl">Office longitude</label><input type="text" id="acLng" placeholder="101.68690" inputmode="decimal"></div>
+          </div>
+          <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="useCurrentLocation()">Use my current location (I'm at the office)</button>
+          <p class="hint" id="gpsCapHint"></p>
+          <label class="fl">Allowed radius (meters)</label>
+          <input type="number" id="acRadius" min="50" max="5000" value="200">
+          <p class="hint">200 m suits most offices; use more for large sites, where GPS is weak indoors, or if clock-ins get wrongly refused.</p>
+        </div>
         <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="saveAutoCfg()">Save auto-clock settings</button></div>
       </div>
     </div>
@@ -581,7 +597,7 @@ function renderHome(){
   var al = document.getElementById('autoLine');
   if (acfg && acfg.enabled && acfg.ssid){
     al.style.display = 'block';
-    al.textContent = '⚡ Auto clock on WiFi "'+acfg.ssid+'"';
+    al.textContent = '⚡ Auto clock on WiFi "'+acfg.ssid+'"'+(acfg.gps ? ' + GPS check' : '');
   } else al.style.display = 'none';
 
   var rec = todayRec();
@@ -685,6 +701,29 @@ function renderAutoCard(){
   document.getElementById('acOn').checked = !!cfg.enabled;
   document.getElementById('acSsid').value = cfg.ssid || '';
   document.getElementById('acGrace').value = (cfg.grace != null) ? cfg.grace : 10;
+  document.getElementById('acGps').checked = !!cfg.gps;
+  document.getElementById('acLat').value = (cfg.lat != null) ? cfg.lat : '';
+  document.getElementById('acLng').value = (cfg.lng != null) ? cfg.lng : '';
+  document.getElementById('acRadius').value = (cfg.radius != null) ? cfg.radius : 200;
+  toggleGpsFields();
+}
+function toggleGpsFields(){
+  document.getElementById('gpsFields').style.display =
+    document.getElementById('acGps').checked ? 'block' : 'none';
+}
+function useCurrentLocation(){
+  if (!navigator.geolocation){ toast('Location not available on this device'); return; }
+  var hint = document.getElementById('gpsCapHint');
+  hint.textContent = 'Getting location…';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    document.getElementById('acLat').value = pos.coords.latitude.toFixed(5);
+    document.getElementById('acLng').value = pos.coords.longitude.toFixed(5);
+    hint.textContent = 'Office location captured (±'+Math.round(pos.coords.accuracy)+' m accuracy)';
+    toast('Office location captured');
+  }, function(){
+    hint.textContent = '';
+    toast('Could not get location — check permission and Location Services');
+  }, {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
 }
 function useCurrentWifi(){
   var b = bridge();
@@ -704,9 +743,18 @@ function saveAutoCfg(){
   var on = document.getElementById('acOn').checked;
   var ssid = document.getElementById('acSsid').value.trim();
   var grace = Math.max(0, +document.getElementById('acGrace').value || 0);
+  var gps = document.getElementById('acGps').checked;
+  var lat = parseFloat(document.getElementById('acLat').value);
+  var lng = parseFloat(document.getElementById('acLng').value);
+  var radius = Math.max(50, +document.getElementById('acRadius').value || 200);
   if (on && !ssid){ toast('Enter the company WiFi name first'); return; }
-  b.setAutoConfig(JSON.stringify({enabled:on, ssid:ssid, grace:grace}));
-  toast(on ? 'Auto clock enabled for "'+ssid+'"' : 'Auto clock disabled');
+  if (on && gps && (isNaN(lat) || isNaN(lng))){
+    toast('Set the office location first (tap "Use my current location" at the office)'); return;
+  }
+  var cfg = {enabled:on, ssid:ssid, grace:grace, gps:gps};
+  if (gps){ cfg.lat = lat; cfg.lng = lng; cfg.radius = radius; }
+  b.setAutoConfig(JSON.stringify(cfg));
+  toast(on ? ('Auto clock enabled for "'+ssid+'"'+(gps?' with GPS check':'')) : 'Auto clock disabled');
   renderHome();
 }
 function syncAutoEvents(){
@@ -727,7 +775,7 @@ function syncAutoEvents(){
       if (!rec){
         var rd = rosterFor(key);
         var late = rd && rd.on ? (minsOf(t) > minsOf(rd.start) + (+roster.grace||0)) : false;
-        att.push({d:key, in:t, out:null, late:late, loc:'Company WiFi', auto:true});
+        att.push({d:key, in:t, out:null, late:late, loc:(ev.loc || 'Company WiFi'), auto:true});
         changed = true;
       }
     } else {

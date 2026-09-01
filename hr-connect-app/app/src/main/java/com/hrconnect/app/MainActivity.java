@@ -144,7 +144,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String appVersion() {
-            return "1.1";
+            return "1.2";
         }
 
         /* ---------- WiFi auto clock-in/out ---------- */

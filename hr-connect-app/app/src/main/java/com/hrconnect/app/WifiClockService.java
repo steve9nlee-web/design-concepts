@@ -14,7 +14,11 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -45,6 +49,12 @@ public class WifiClockService extends Service {
     private Handler handler;
     private Runnable pendingOut;
     private boolean onCompanyWifi = false;
+
+    // GPS cross-check state for the current WiFi session
+    private boolean gpsCheckRunning = false;
+    private boolean gpsRejected = false;
+    private int gpsAttempts = 0;
+    private LocationListener gpsListener;
 
     @Override
     public IBinder onBind(Intent intent) { return null; }
@@ -105,11 +115,22 @@ public class WifiClockService extends Service {
         String current = normalizeSsid(currentSsid(this));
         boolean match = current.equalsIgnoreCase(target);
 
+        if (!match) {
+            // Left (or never joined) the network: reset the GPS session state so
+            // the next arrival is checked afresh.
+            gpsRejected = false;
+            gpsAttempts = 0;
+            stopGpsListener();
+            gpsCheckRunning = false;
+        }
+
         if (match && !onCompanyWifi) {
-            onCompanyWifi = true;
             if (pendingOut != null) { handler.removeCallbacks(pendingOut); pendingOut = null; }
-            appendEvent(this, "in", System.currentTimeMillis());
-            updateNotification("On company WiFi (" + target + ") — clocked in");
+            if (cfg.optBoolean("gps", false)) {
+                if (!gpsRejected && !gpsCheckRunning) startGpsCheck(cfg, target);
+            } else {
+                clockInNow(target, null);
+            }
         } else if (!match && onCompanyWifi && pendingOut == null) {
             // Debounce: only clock out if we stay off the network for the grace period.
             final long leftAt = System.currentTimeMillis();
@@ -118,7 +139,7 @@ public class WifiClockService extends Service {
                 @Override public void run() {
                     pendingOut = null;
                     onCompanyWifi = false;
-                    appendEvent(WifiClockService.this, "out", leftAt);
+                    appendEvent(WifiClockService.this, "out", leftAt, null);
                     updateNotification("Left company WiFi — clocked out");
                 }
             };
@@ -129,6 +150,123 @@ public class WifiClockService extends Service {
             pendingOut = null;
             updateNotification("On company WiFi (" + target + ") — clocked in");
         }
+    }
+
+    private void clockInNow(String target, String verifiedLoc) {
+        onCompanyWifi = true;
+        appendEvent(this, "in", System.currentTimeMillis(), verifiedLoc);
+        updateNotification("On company WiFi (" + target + ") — clocked in"
+                + (verifiedLoc != null ? " (GPS verified)" : ""));
+    }
+
+    /* ---------- GPS cross-check ---------- */
+
+    private void startGpsCheck(final JSONObject cfg, final String target) {
+        gpsCheckRunning = true;
+        gpsAttempts++;
+        updateNotification("On company WiFi — verifying office location…");
+
+        final double lat = cfg.optDouble("lat", 0);
+        final double lng = cfg.optDouble("lng", 0);
+        final float radius = (float) Math.max(50, cfg.optDouble("radius", 200));
+
+        final LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        // A recent existing fix is good enough (phones on WiFi usually have one).
+        Location last = bestLastKnown(lm);
+        if (last != null && System.currentTimeMillis() - last.getTime() < 10 * 60000L) {
+            finishGpsCheck(cfg, target, last, lat, lng, radius);
+            return;
+        }
+
+        // Otherwise ask for one fresh fix, with a timeout.
+        gpsListener = new LocationListener() {
+            @Override public void onLocationChanged(Location location) {
+                stopGpsListener();
+                if (!gpsCheckRunning) return;
+                finishGpsCheck(cfg, target, location, lat, lng, radius);
+            }
+            @Override public void onStatusChanged(String p, int s, Bundle e) {}
+            @Override public void onProviderEnabled(String p) {}
+            @Override public void onProviderDisabled(String p) {}
+        };
+        boolean requested = false;
+        try {
+            if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                lm.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, gpsListener, Looper.getMainLooper());
+                requested = true;
+            }
+            if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                lm.requestSingleUpdate(LocationManager.GPS_PROVIDER, gpsListener, Looper.getMainLooper());
+                requested = true;
+            }
+        } catch (SecurityException e) {
+            stopGpsListener();
+            gpsCheckRunning = false;
+            updateNotification("Location permission missing — cannot verify office, not clocked in");
+            return;
+        }
+        if (!requested) {
+            stopGpsListener();
+            gpsCheckRunning = false;
+            updateNotification("Location Services off — cannot verify office, not clocked in");
+            return;
+        }
+        // Timeout: no fix within 45s → retry a few times while still on the WiFi.
+        handler.postDelayed(new Runnable() {
+            @Override public void run() {
+                if (!gpsCheckRunning || gpsListener == null) return;
+                stopGpsListener();
+                gpsCheckRunning = false;
+                if (gpsAttempts < 5) {
+                    handler.postDelayed(new Runnable() {
+                        @Override public void run() { evaluate(); }
+                    }, 3 * 60000L);
+                    updateNotification("Waiting for a location fix to verify office…");
+                } else {
+                    updateNotification("Could not get a location fix — not clocked in. Clock in manually in the app.");
+                }
+            }
+        }, 45000L);
+    }
+
+    private void finishGpsCheck(JSONObject cfg, String target, Location loc,
+                                double lat, double lng, float radius) {
+        gpsCheckRunning = false;
+        float[] dist = new float[1];
+        Location.distanceBetween(loc.getLatitude(), loc.getLongitude(), lat, lng, dist);
+        if (dist[0] <= radius) {
+            String stamp = String.format(java.util.Locale.US, "%.4f, %.4f",
+                    loc.getLatitude(), loc.getLongitude());
+            clockInNow(target, "Company WiFi + GPS (" + stamp + ")");
+        } else {
+            gpsRejected = true;
+            updateNotification("On company WiFi but " + Math.round(dist[0])
+                    + " m from the office — not clocked in");
+        }
+    }
+
+    private void stopGpsListener() {
+        if (gpsListener != null) {
+            try {
+                LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                lm.removeUpdates(gpsListener);
+            } catch (Exception ignored) {}
+            gpsListener = null;
+        }
+    }
+
+    private Location bestLastKnown(LocationManager lm) {
+        Location best = null;
+        String[] providers = { LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER,
+                LocationManager.PASSIVE_PROVIDER };
+        for (int i = 0; i < providers.length; i++) {
+            try {
+                Location l = lm.getLastKnownLocation(providers[i]);
+                if (l != null && (best == null || l.getTime() > best.getTime())) best = l;
+            } catch (Exception ignored) {}
+        }
+        return best;
     }
 
     /* ---------- shared helpers (also used by MainActivity / BootReceiver) ---------- */
@@ -159,13 +297,14 @@ public class WifiClockService extends Service {
         return s.trim();
     }
 
-    public static synchronized void appendEvent(Context ctx, String type, long ts) {
+    public static synchronized void appendEvent(Context ctx, String type, long ts, String loc) {
         try {
             SharedPreferences sp = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
             JSONArray arr = new JSONArray(sp.getString(KEY_EVENTS, "[]"));
             JSONObject ev = new JSONObject();
             ev.put("type", type);
             ev.put("ts", ts);
+            if (loc != null) ev.put("loc", loc);
             arr.put(ev);
             sp.edit().putString(KEY_EVENTS, arr.toString()).apply();
         } catch (Exception ignored) {}

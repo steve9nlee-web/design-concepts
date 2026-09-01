@@ -15,6 +15,7 @@ phone (localStorage inside the app's WebView) — no server required.
    - Android only reveals the WiFi name to apps with **location permission** — choose **"Allow all the time"** and keep Location Services on, or auto clock cannot see the network name.
    - After a reboot the service restarts automatically. Some phone brands' battery savers can still stop background apps; exclude HR Connect from battery optimization for best reliability.
    - A small permanent notification is shown while monitoring (an Android requirement for background services).
+8. **GPS cross-check** (v1.2) — optional extra integrity for auto clock-in: turn on *GPS cross-check* in the same settings card, capture the office coordinates with "Use my current location" while at the office, and set an allowed radius (default 200 m). Auto clock-in then only fires when the phone is on the company WiFi **and** physically within that radius — a home hotspot renamed to the office SSID no longer works. GPS-verified records carry the verified coordinates. If no location fix is available the service retries for a while and otherwise skips the auto clock-in (the employee can still clock in manually); the notification always says why.
 
 Sample data is loaded on first launch so the app is explorable immediately —
 clear it with one tap from the dashboard banner or the Profile page.
