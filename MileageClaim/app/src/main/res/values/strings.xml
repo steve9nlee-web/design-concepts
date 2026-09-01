@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mileage Claim</string>
+    <string name="settings">Settings</string>
+    <string name="back">&#8592; Back</string>
+
+    <string name="label_staff">Staff name</string>
+    <string name="hint_staff">Your name</string>
+    <string name="label_date">Date</string>
+    <string name="label_time">Time</string>
+    <string name="label_destination">Destination</string>
+    <string name="hint_destination">Where did you travel to?</string>
+    <string name="label_purpose">Purpose</string>
+    <string name="hint_purpose">Reason for the trip</string>
+    <string name="label_km">Mileage to claim (km)</string>
+    <string name="hint_km">e.g. 12.5</string>
+    <string name="submit">Submit claim</string>
+    <string name="sync_pending">Send %d pending claim(s)</string>
+    <string name="history">Recent claims</string>
+    <string name="history_empty">No claims yet. Submitted claims appear here.</string>
+    <string name="status_sent">Sent</string>
+    <string name="status_pending">Pending</string>
+
+    <string name="error_staff">Enter your name</string>
+    <string name="error_destination">Enter the destination</string>
+    <string name="error_purpose">Enter the purpose</string>
+    <string name="error_km">Enter the distance in km</string>
+    <string name="error_not_configured">Set the server URL and secret in Settings first</string>
+
+    <string name="sync_ok">Claim sent (%d in total)</string>
+    <string name="sync_partial">Sent %1$d claim(s); the rest stay pending: %2$s</string>
+    <string name="sync_failed">Saved as pending — could not reach server: %s</string>
+
+    <string name="label_server_url">Server URL</string>
+    <string name="hint_server_url">https://script.google.com/macros/s/…/exec</string>
+    <string name="label_secret">Shared secret</string>
+    <string name="hint_secret">Same value as SHARED_SECRET in Code.gs</string>
+    <string name="settings_help">Paste the Apps Script web-app URL and the shared secret your admin configured. See mileage-backend/README.md in the project repository.</string>
+    <string name="test_connection">Test connection</string>
+    <string name="save">Save</string>
+    <string name="settings_saved">Settings saved</string>
+    <string name="test_ok">Connection OK</string>
+    <string name="test_failed">Connection failed: %s</string>
+</resources>

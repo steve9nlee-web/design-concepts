@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mileage Admin</string>
+    <string name="settings">Settings</string>
+    <string name="back">&#8592; Back</string>
+
+    <string name="summary">%1$d claim(s) · %2$s km total</string>
+    <string name="open_excel">Open Excel file in Google Drive</string>
+    <string name="empty">No claims submitted yet. Pull down to refresh.</string>
+    <string name="error_fetch">Could not load claims: %s</string>
+    <string name="error_no_xlsx">Excel link not available yet — refresh after the first claim is submitted.</string>
+    <string name="error_not_configured">Set the server URL and secret in Settings first</string>
+
+    <string name="label_server_url">Server URL</string>
+    <string name="hint_server_url">https://script.google.com/macros/s/…/exec</string>
+    <string name="label_secret">Shared secret</string>
+    <string name="hint_secret">Same value as SHARED_SECRET in Code.gs</string>
+    <string name="settings_help">Paste the Apps Script web-app URL and the shared secret from your backend deployment. See mileage-backend/README.md in the project repository.</string>
+    <string name="test_connection">Test connection</string>
+    <string name="save">Save</string>
+    <string name="settings_saved">Settings saved</string>
+    <string name="test_ok">Connection OK</string>
+    <string name="test_failed">Connection failed: %s</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#0d5c8f"
+        android:pathData="M2,2h20v20h-20z" />
+    <!-- Car silhouette -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,13l1.5,-4.5c0.2,-0.6 0.8,-1 1.4,-1h8.2c0.6,0 1.2,0.4 1.4,1L19,13v5c0,0.6 -0.4,1 -1,1h-1c-0.6,0 -1,-0.4 -1,-1v-1H8v1c0,0.6 -0.4,1 -1,1H6c-0.6,0 -1,-0.4 -1,-1v-5z M7.3,9l-1,3h11.4l-1,-3c-0.1,-0.3 -0.4,-0.5 -0.7,-0.5H8c-0.3,0 -0.6,0.2 -0.7,0.5z M7,14.5a1.2,1.2 0,1 0,2.4 0a1.2,1.2 0,1 0,-2.4 0z M14.6,14.5a1.2,1.2 0,1 0,2.4 0a1.2,1.2 0,1 0,-2.4 0z" />
+</vector>
