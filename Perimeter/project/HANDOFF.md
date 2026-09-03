@@ -4,8 +4,9 @@ Auto attendance for staff: log in when they reach company wi-fi inside a 100 m
 geofence, log out one minute after they leave it, append one row per session to
 a spreadsheet in Google Drive.
 
-**Design reference:** `Perimeter - Auto Attendance App.dc.html` (four screens,
-all states reachable via the Simulate panel).
+**Design reference:** `Perimeter - Auto Attendance App.dc.html` (three staff
+screens plus the admin keypad and the admin-only Rules screen; all states
+reachable via the Simulate panel — the demo PIN is shown under it).
 **Spreadsheet:** `attendance_2026.xlsx`
 **Backend:** `AppendSession.gs`
 
@@ -29,7 +30,65 @@ Both thresholds are server-configurable per site. Do not hard-code them.
 
 ---
 
-## 2. Android
+## 2. Roles — admin vs staff
+
+The app is installed on the **staff member's own phone** and there is no sign-in.
+Everything below follows from that: there is no session to authorise against, so
+the split is done by hiding a screen behind a local PIN, and by making the
+**server** the authority on anything that matters.
+
+### What staff can reach
+
+Three tabs, always: **Status**, **Log**, **Sheet**. No Rules tab exists in the
+tab bar. Staff can read their own diagnostics and their own hours, and can hit
+**Retry now** when the sync queue is backed up. They cannot change the fence,
+the grace period, the allow-list, or the minimum accuracy, and they cannot see
+the Drive file name, the folder id, or the total row count.
+
+### What admin reaches, and how
+
+A narrow **padlock chip** sits at the right end of the tab bar — visible to
+everyone, but it leads to a keypad, not to settings. It is deliberately *not* a
+hidden gesture: an admin walking up to a staff phone must be able to find it
+without training.
+
+```
+tap padlock  →  PIN keypad  →  correct PIN  →  Rules tab appears and is selected
+                                            →  Sheet screen reveals file/folder/rows
+```
+
+- PIN length follows the configured PIN (4 digits in the prototype).
+- **5 wrong entries lock the keypad for 60 s.** Without this a 4-digit PIN is
+  10,000 guesses. Keep the counter in encrypted storage, not memory, or a force
+  quit resets it.
+- The admin session **auto-locks after 120 s idle** (`adminIdleSeconds`), and
+  there is an explicit **Lock** button on the Rules screen. Locking returns the
+  user to Status and removes the Rules tab again.
+- On lock, re-hide the Sheet screen's admin block. Do not cache it.
+
+### What this does and does not buy you
+
+A PIN checked on the handset stops ordinary staff. It does **not** stop a rooted
+device, a repackaged APK, or anyone who reads the PIN out of the binary. So:
+
+1. **Never ship the PIN in the APK.** It arrives with the site config from the
+   server and is stored in the Keystore / Keychain, never in `SharedPreferences`
+   or `UserDefaults` as plain text. Rotating it must not require a release.
+2. **The phone never writes site config.** It `GET`s the fence, grace, allow-list
+   and min accuracy; it has no endpoint to change them. An admin edit on the
+   Rules screen is an *authenticated admin API call*, not a local write — if it
+   fails, the screen must show the old value, not the typed one.
+3. **The server validates every row against its own copy of the config.** A
+   handset that has been tampered with can change what it *displays* and never
+   what gets *recorded*. This is the part that actually enforces the rule; the
+   PIN is only UI.
+4. If a real admin identity is ever needed (audit trail of who changed the fence
+   and when), the PIN is not enough — that needs an actual admin login on the
+   API call, and the PIN becomes just the screen unlock in front of it.
+
+---
+
+## 3. Android
 
 ### Permissions
 ```
@@ -66,7 +125,7 @@ tracking" row on the Rules screen as a warning when it's off. A session that
 dies mid-shift must still be written with `flag = OPEN` on next launch — never
 silently dropped.
 
-## 3. iOS
+## 4. iOS
 
 - `NSLocationAlwaysAndWhenInUseUsageDescription`, `UIBackgroundModes: location`.
 - `CLLocationManager.startMonitoring(for: CLCircularRegion)` for the fence.
@@ -79,14 +138,15 @@ silently dropped.
 
 ---
 
-## 4. Screens
+## 5. Screens
 
 | Screen | States to build |
 |---|---|
 | **Status** | on site · grace countdown (60→0, cancellable) · logged out · login blocked (BSSID/GPS mismatch) · location off |
 | **Log** | week total, average arrival, session list with `OK` / `LOW GPS` / `OPEN` flags |
-| **Sheet** | connected · syncing · offline with queue depth and retry |
-| **Rules** | fence radius, grace seconds, allowed router list, min GPS accuracy, background-tracking status |
+| **Sheet** | connected · syncing · offline with queue depth and retry — plus, admin only, the file/tab/folder/rows block and **Open in Drive** |
+| **Keypad** | idle · digits entered · wrong PIN with tries remaining · locked out with countdown. Staff-facing; this is the only admin entry point |
+| **Rules** | admin only, does not exist in the tab bar otherwise — fence radius, grace seconds, allowed router list, min GPS accuracy, background-tracking status, plus the session banner with countdown and **Lock** |
 
 The grace screen is the one to get right: a visible countdown with an "I'm still
 on site" button. Silent logouts generate payroll disputes.
@@ -97,7 +157,7 @@ can see why it decided what it decided.
 
 ---
 
-## 5. API
+## 6. API
 
 Phone → your server:
 
@@ -130,9 +190,32 @@ Rules:
 4. **The phone never holds Drive credentials.** Your server calls the Apps
    Script endpoint or the Sheets API with a service account.
 
+Site config, read-only to the handset:
+
+```
+GET /v1/sites/HQ-AMPANG
+{
+  "radius_m": 100,
+  "grace_s": 60,
+  "min_accuracy_m": 30,
+  "allowed": [{"ssid": "CORP-STAFF", "bssid": "3c:07:54:aa:1d:02"}, ...],
+  "admin_pin": "4917",          // rotate server-side; store in Keystore/Keychain
+  "admin_idle_s": 120,
+  "config_version": 37
+}
+```
+
+5. **There is no `PUT /v1/sites/:id` from the staff app.** Admin edits made on
+   the Rules screen go to a separate authenticated admin endpoint. Poll this on
+   launch and on network regain; `config_version` tells the phone whether to
+   refresh. Stamp the version onto each session row so a disputed shift can be
+   replayed against the rules that were live at the time.
+6. **Reject on the server, not just on the phone.** A row whose coordinates sit
+   outside the fence the server holds is flagged, whatever the handset claimed.
+
 ---
 
-## 6. Spreadsheet
+## 7. Spreadsheet
 
 `attendance_2026.xlsx` — two tabs.
 
@@ -163,7 +246,7 @@ follow the setup comment at the top of `AppendSession.gs`.
 
 ---
 
-## 7. Still open
+## 8. Still open
 
 - Multi-site staff — who assigns which fences, and what happens when two
   fences overlap.

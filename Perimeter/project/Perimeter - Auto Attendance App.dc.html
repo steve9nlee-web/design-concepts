@@ -29,6 +29,14 @@ a{color:#c24b09}a:hover{color:#8f3705}
 <div style="display:flex;gap:10px;align-items:flex-start"><div style="flex:none;width:20px;height:20px;border-radius:6px;background:#17120e;color:#fff;font:700 11px/20px 'IBM Plex Mono',monospace;text-align:center">4</div><div style="font:500 13px/1.35 'Space Grotesk',sans-serif;color:#3b332d">All three hold for 15&nbsp;s before the row is written</div></div>
 </div>
 </div>
+<div style="background:#fbf7f0;border:2px solid #17120e;border-radius:20px;padding:18px 18px 16px">
+<div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#17120e;margin-bottom:12px">WHO MAY CHANGE THE RULES</div>
+<div style="font:500 13px/1.5 'Space Grotesk',sans-serif;color:#3b332d">The app lives on the staff phone with no accounts and no sign-in. Staff get three tabs — Status, Log, Sheet. Fence radius, grace period, the router allow-list and the Drive file details sit behind an admin PIN on the keypad chip; the Rules tab does not exist until the PIN is entered, and the session re-locks itself after {{ adminIdle }}&nbsp;s idle or on Lock.</div>
+</div>
+<div style="background:#c02b16;border-radius:20px;padding:18px;color:#fff0ed">
+<div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#ffc9c0;margin-bottom:10px">THE PIN IS A GATE, NOT A GUARANTEE</div>
+<div style="font:500 13px/1.45 'Space Grotesk',sans-serif;color:#ffd9d3">A PIN checked on the handset stops ordinary staff — it does not stop a rooted phone or a repackaged APK. The server must own the settings and enforce them on every write, so a tampered device can change what it <em>displays</em> but never what gets <em>recorded</em>.</div>
+</div>
 <div style="background:#17120e;border-radius:20px;padding:18px">
 <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#ff9d5c;margin-bottom:10px">WHAT I CAN'T DO FROM HERE</div>
 <div style="font:500 13px/1.45 'Space Grotesk',sans-serif;color:#cdc4bb">This prototype can't write to your Drive folder — that needs a service account or an Apps Script bound to the sheet. The app screens are designed around that contract: the phone queues rows offline, a backend appends them, and the sync screen reports the result.</div>
@@ -55,12 +63,17 @@ a{color:#c24b09}a:hover{color:#8f3705}
 <div style="position:absolute;top:0;left:0;right:0;height:54px;background:#fbf7f0;z-index:60"></div>
 <div style="position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:139px;height:5px;border-radius:5px;background:rgba(0,0,0,.28);z-index:75;pointer-events:none"></div>
 <div style="position:absolute;bottom:0;left:0;right:0;z-index:55;padding:8px 12px 30px;background:#fbf7f0;border-top:2px solid #efe8dc;display:flex;gap:4px;box-sizing:border-box">
-<sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+<sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
 <div onClick="{{ t.go }}" style="flex:1;border-radius:16px;padding:10px 0 9px;text-align:center;cursor:pointer;background:{{ t.bg }}">
 <div style="font:600 11px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:{{ t.fg }}">{{ t.badge }}</div>
 <div style="font:600 11.5px/1 'Space Grotesk',sans-serif;color:{{ t.fg }};margin-top:6px">{{ t.label }}</div>
 </div>
 </sc-for>
+<div onClick="{{ lockTap }}" style="flex:none;width:48px;border-radius:16px;padding:8px 0 9px;cursor:pointer;background:{{ lockBg }};box-sizing:border-box;display:flex;flex-direction:column;align-items:center">
+<div style="width:11px;height:7px;border:2px solid {{ lockFg }};border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box;margin-bottom:-1px;transform:{{ shackle }}"></div>
+<div style="width:16px;height:11px;border-radius:3px;background:{{ lockFg }}"></div>
+<div style="font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;color:{{ lockFg }};margin-top:7px">{{ lockLabel }}</div>
+</div>
 </div>
 <div style="position:absolute;inset:0;z-index:10;overflow:auto;padding:62px 18px 104px;box-sizing:border-box;display:{{ dispHome }}">
 <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 16px">
@@ -221,13 +234,20 @@ a{color:#c24b09}a:hover{color:#8f3705}
 <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;opacity:.7">{{ syncState }}</div>
 <div style="font:700 26px/1.1 'Space Grotesk',sans-serif;letter-spacing:-.02em;margin-top:12px">{{ syncHeadline }}</div>
 <div style="font:500 13px/1.45 'Space Grotesk',sans-serif;opacity:.78;margin-top:8px">{{ syncSub }}</div>
-<div style="background:rgba(255,255,255,.16);border-radius:14px;padding:12px 13px;margin-top:16px;font:500 11.5px/1.7 'IBM Plex Mono',monospace">
+<div style="display:{{ dispSheetMeta }};background:rgba(255,255,255,.16);border-radius:14px;padding:12px 13px;margin-top:16px;font:500 11.5px/1.7 'IBM Plex Mono',monospace">
 <div style="display:flex;justify-content:space-between;gap:10px"><span style="opacity:.66">file</span><span>attendance_2026.xlsx</span></div>
 <div style="display:flex;justify-content:space-between;gap:10px"><span style="opacity:.66">tab</span><span>Sep_2026</span></div>
 <div style="display:flex;justify-content:space-between;gap:10px"><span style="opacity:.66">folder</span><span>1vepCDXY…t6kQEc</span></div>
 <div style="display:flex;justify-content:space-between;gap:10px"><span style="opacity:.66">rows</span><span>{{ rowCount }}</span></div>
 </div>
-<div onClick="{{ syncNow }}" style="background:#fff5ec;color:#17120e;border-radius:16px;padding:15px 0;text-align:center;font:600 15px/1 'Space Grotesk',sans-serif;margin-top:16px;cursor:pointer">{{ syncBtnLabel }}</div>
+<div style="display:{{ dispSheetNote }};align-items:center;gap:10px;background:rgba(255,255,255,.16);border-radius:14px;padding:12px 13px;margin-top:16px">
+<div style="flex:none;display:flex;flex-direction:column;align-items:center">
+<div style="width:9px;height:6px;border:2px solid currentColor;border-bottom:0;border-radius:5px 5px 0 0;box-sizing:border-box;margin-bottom:-1px;opacity:.72"></div>
+<div style="width:13px;height:9px;border-radius:2px;background:currentColor;opacity:.72"></div>
+</div>
+<div style="font:500 12px/1.4 'Space Grotesk',sans-serif;opacity:.82">Your hours are written by the company attendance service. The file location and Drive access are held by your administrator.</div>
+</div>
+<div onClick="{{ syncNow }}" style="display:{{ dispSyncBtn }};background:#fff5ec;color:#17120e;border-radius:16px;padding:15px 0;text-align:center;font:600 15px/1 'Space Grotesk',sans-serif;margin-top:16px;cursor:pointer">{{ syncBtnLabel }}</div>
 </div>
 <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#a2988f;padding:20px 2px 10px">LAST ROWS WRITTEN</div>
 <div style="background:#fff;border:2px solid #17120e;border-radius:20px;overflow:hidden">
@@ -240,10 +260,35 @@ a{color:#c24b09}a:hover{color:#8f3705}
 </sc-for>
 </div>
 </div>
+<div style="position:absolute;inset:0;z-index:10;overflow:auto;padding:62px 18px 104px;box-sizing:border-box;display:{{ dispLock }}">
+<div style="padding:6px 2px 16px">
+<div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#a2988f">RESTRICTED</div>
+<div style="font:700 30px/1.05 'Space Grotesk',sans-serif;letter-spacing:-.025em;color:#17120e;margin-top:6px">Admin only</div>
+</div>
+<div style="background:#17120e;border-radius:26px;padding:22px 22px 18px;color:#fbf7f0">
+<div style="font:500 14px/1.45 'Space Grotesk',sans-serif;color:#b3a9a1">Fence radius, grace period and the router allow-list decide what your timesheet says, so only an administrator can open them.</div>
+<div style="display:flex;justify-content:center;gap:14px;margin:24px 0 2px">
+<sc-for list="{{ pinDots }}" as="d" hint-placeholder-count="4">
+<div style="width:16px;height:16px;border-radius:16px;border:2px solid {{ d.border }};background:{{ d.bg }};box-sizing:border-box"></div>
+</sc-for>
+</div>
+<div style="text-align:center;font:600 11px/24px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:{{ pinMsgColor }}">{{ pinMsg }}</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:14px">
+<sc-for list="{{ pinKeys }}" as="key" hint-placeholder-count="12">
+<div onClick="{{ key.press }}" style="width:calc(33.333% - 6px);box-sizing:border-box;border:2px solid {{ key.br }};border-radius:18px;padding:14px 0;text-align:center;cursor:pointer;background:{{ key.bg }};font:600 21px/1 'IBM Plex Mono',monospace;color:{{ key.fg }}">{{ key.label }}</div>
+</sc-for>
+</div>
+<div style="font:500 12px/1.5 'Space Grotesk',sans-serif;color:#8a807a;padding:14px 4px 0">The PIN is set by your administrator and is checked on this phone — it is never sent anywhere. Five wrong tries lock the keypad for a minute.</div>
+</div>
 <div style="position:absolute;inset:0;z-index:10;overflow:auto;padding:62px 18px 104px;box-sizing:border-box;display:{{ dispSetup }}">
 <div style="padding:6px 2px 16px">
 <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#a2988f">ADMIN</div>
 <div style="font:700 30px/1.05 'Space Grotesk',sans-serif;letter-spacing:-.025em;color:#17120e;margin-top:6px">Site &amp; rules</div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;background:#e8590c;border-radius:18px;padding:11px 11px 11px 15px;margin-bottom:14px;color:#fff5ec">
+<div style="flex:1;font:600 11px/1.3 'IBM Plex Mono',monospace;letter-spacing:.1em">ADMIN SESSION · {{ adminLeftLabel }}</div>
+<div onClick="{{ lockNow }}" style="flex:none;background:#17120e;color:#fbf7f0;border-radius:12px;padding:10px 15px;font:600 12.5px/1 'Space Grotesk',sans-serif;cursor:pointer">Lock</div>
 </div>
 <div style="background:#17120e;border-radius:22px;padding:18px;color:#fbf7f0">
 <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#ff9d5c">GEOFENCE</div>
@@ -265,10 +310,11 @@ a{color:#c24b09}a:hover{color:#8f3705}
 <div style="font:500 11.5px/1.3 'Space Grotesk',sans-serif;color:#8a807a;margin-top:3px">{{ st.note }}</div>
 </div>
 <div style="font:600 12.5px/1 'IBM Plex Mono',monospace;color:{{ st.color }};text-align:right">{{ st.v }}</div>
+<div style="flex:none;font:600 16px/1 'Space Grotesk',sans-serif;color:#c8bfb6">›</div>
 </div>
 </sc-for>
 </div>
-<div style="font:500 12px/1.5 'Space Grotesk',sans-serif;color:#8a807a;padding:14px 4px 0">Changing the fence or router list only affects rows written from now on. Past rows stay as recorded.</div>
+<div style="font:500 12px/1.5 'Space Grotesk',sans-serif;color:#8a807a;padding:14px 4px 0">Changing the fence or router list only affects rows written from now on. Past rows stay as recorded. Edits sync to the server and apply to every phone on this site — they are not local to this handset.</div>
 </div>
 </div>
 <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:22px">
@@ -279,6 +325,11 @@ a{color:#c24b09}a:hover{color:#8f3705}
 <sc-for list="{{ sims }}" as="sim" hint-placeholder-count="6">
 <div onClick="{{ sim.go }}" style="border:2px solid #17120e;border-radius:14px;padding:10px 13px;cursor:pointer;background:#fff;font:600 12.5px/1 'Space Grotesk',sans-serif;color:#17120e" style-hover="background:#17120e;color:#fbf7f0">{{ sim.label }}</div>
 </sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:8px;background:#fbf7f0;border:2px solid #efe8dc;border-radius:14px;padding:11px 13px;margin-top:14px">
+<div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#a2988f">DEMO PIN</div>
+<div style="font:600 14px/1 'IBM Plex Mono',monospace;letter-spacing:.22em;color:#e8590c">{{ adminPin }}</div>
+<div style="flex:1;font:500 11px/1.35 'Space Grotesk',sans-serif;color:#8a807a;text-align:right">set in Tweaks · Admin</div>
 </div>
 </div>
 <div style="background:#fbf7f0;border:2px solid #17120e;border-radius:22px;padding:18px">
@@ -315,7 +366,7 @@ a{color:#c24b09}a:hover{color:#8f3705}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;radiusMeters&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:100,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:25,&quot;max&quot;:500,&quot;step&quot;:5,&quot;unit&quot;:&quot;m&quot;,&quot;section&quot;:&quot;Rules&quot;},&quot;graceSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:60,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:15,&quot;max&quot;:300,&quot;step&quot;:15,&quot;unit&quot;:&quot;s&quot;,&quot;section&quot;:&quot;Rules&quot;},&quot;showDiagnostics&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;staffName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Nadia Rahman&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;radiusMeters&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:100,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:25,&quot;max&quot;:500,&quot;step&quot;:5,&quot;unit&quot;:&quot;m&quot;,&quot;section&quot;:&quot;Rules&quot;},&quot;graceSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:60,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:15,&quot;max&quot;:300,&quot;step&quot;:15,&quot;unit&quot;:&quot;s&quot;,&quot;section&quot;:&quot;Rules&quot;},&quot;showDiagnostics&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;staffName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Nadia Rahman&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;adminPin&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;4917&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Admin&quot;},&quot;adminIdleSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:30,&quot;max&quot;:600,&quot;step&quot;:30,&quot;unit&quot;:&quot;s&quot;,&quot;section&quot;:&quot;Admin&quot;}}">
 const SITE = 'HQ — Jalan Ampang';
 
 class Component extends DCLogic {
@@ -326,10 +377,58 @@ class Component extends DCLogic {
     distance: 34,
     queued: 0,
     offline: false,
-    syncing: false
+    syncing: false,
+    admin: false,
+    adminLeft: 0,
+    pinEntry: '',
+    pinError: false,
+    tries: 0,
+    cooldown: 0
   };
 
-  componentWillUnmount() { clearInterval(this._t); }
+  componentWillUnmount() { clearInterval(this._t); clearInterval(this._at); clearInterval(this._ct); }
+
+  pin = () => String(this.props.adminPin ?? '4917');
+
+  openKeypad = () => this.setState({ tab: 'lock', pinEntry: '', pinError: false });
+
+  pressKey = (k) => {
+    const s = this.state;
+    if (s.cooldown > 0) return;
+    const pin = this.pin();
+    if (k === 'C') return this.setState({ pinEntry: '', pinError: false });
+    if (k === '⌫') return this.setState({ pinEntry: s.pinEntry.slice(0, -1), pinError: false });
+    const next = (s.pinEntry + k).slice(0, pin.length);
+    if (next.length < pin.length) return this.setState({ pinEntry: next, pinError: false });
+    if (next === pin) return this.unlockAdmin();
+    const tries = s.tries + 1;
+    this.setState({ pinEntry: '', pinError: true, tries });
+    if (tries >= 5) this.startCooldown();
+  };
+
+  unlockAdmin = () => {
+    clearInterval(this._at);
+    this.setState({ admin: true, tab: 'setup', pinEntry: '', pinError: false, tries: 0, adminLeft: this.props.adminIdleSeconds ?? 120 });
+    this._at = setInterval(() => {
+      const left = this.state.adminLeft - 1;
+      if (left <= 0) this.lockAdmin(); else this.setState({ adminLeft: left });
+    }, 1000);
+  };
+
+  lockAdmin = () => {
+    clearInterval(this._at);
+    this.setState(s => ({ admin: false, adminLeft: 0, pinEntry: '', pinError: false, tab: s.tab === 'setup' ? 'home' : s.tab }));
+  };
+
+  startCooldown = () => {
+    clearInterval(this._ct);
+    this.setState({ cooldown: 60 });
+    this._ct = setInterval(() => {
+      const c = this.state.cooldown - 1;
+      if (c <= 0) { clearInterval(this._ct); this.setState({ cooldown: 0, tries: 0, pinError: false }); }
+      else this.setState({ cooldown: c });
+    }, 1000);
+  };
 
   startGrace = () => {
     clearInterval(this._t);
@@ -346,9 +445,13 @@ class Component extends DCLogic {
   set = (patch) => { clearInterval(this._t); this.setState(Object.assign({ tab: 'home' }, patch)); };
 
   renderVals() {
-    const { tab, mode, graceLeft, distance, queued, offline, syncing } = this.state;
+    const { tab, mode, graceLeft, distance, queued, offline, syncing,
+            admin, adminLeft, pinEntry, pinError, tries, cooldown } = this.state;
     const radius = this.props.radiusMeters ?? 100;
     const total = this.props.graceSeconds ?? 60;
+    const pin = this.pin();
+    const adminIdle = this.props.adminIdleSeconds ?? 120;
+    const cooling = cooldown > 0;
     const name = this.props.staffName ?? 'Nadia Rahman';
     const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
     const inFence = distance <= radius;
@@ -368,7 +471,8 @@ class Component extends DCLogic {
       dispHome: tab === 'home' ? 'block' : 'none',
       dispLog: tab === 'log' ? 'block' : 'none',
       dispSync: tab === 'sync' ? 'block' : 'none',
-      dispSetup: tab === 'setup' ? 'block' : 'none',
+      dispSetup: tab === 'setup' && admin ? 'block' : 'none',
+      dispLock: tab === 'lock' && !admin ? 'block' : 'none',
       dispIn: mode === 'in' ? 'block' : 'none',
       dispGrace: mode === 'grace' ? 'block' : 'none',
       dispOut: mode === 'out' ? 'block' : 'none',
@@ -426,6 +530,9 @@ class Component extends DCLogic {
         ? 'Rows are held on the phone and written in order once a connection returns. Nothing is lost and nothing is overwritten.'
         : 'Last append 2 Sep, 14:26 · appended by the attendance service account, not by you.',
       rowCount: 214 + (offline ? 0 : queued),
+      dispSheetMeta: admin ? 'block' : 'none',
+      dispSheetNote: admin ? 'none' : 'flex',
+      dispSyncBtn: (admin || offline) ? 'block' : 'none',
       syncBtnLabel: offline ? 'Retry now' : syncing ? 'Working…' : 'Open in Drive',
       syncNow: () => {
         if (!offline) return;
@@ -447,14 +554,44 @@ class Component extends DCLogic {
         { k: 'Min GPS accuracy', note: 'fixes worse than this are flagged', v: '30 m', color: '#17120e' },
         { k: 'Background tracking', note: 'battery saver may pause this', v: 'ALLOWED', color: '#0b8a52' }
       ],
-      tabs: [mkTab('home', 'Status', '◉'), mkTab('log', 'Log', '≡'), mkTab('sync', 'Sheet', '⇧'), mkTab('setup', 'Rules', '⚙')],
+      tabs: admin
+        ? [mkTab('home', 'Status', '◉'), mkTab('log', 'Log', '≡'), mkTab('sync', 'Sheet', '⇧'), mkTab('setup', 'Rules', '⚙')]
+        : [mkTab('home', 'Status', '◉'), mkTab('log', 'Log', '≡'), mkTab('sync', 'Sheet', '⇧')],
+
+      lockTap: admin ? this.lockAdmin : this.openKeypad,
+      lockLabel: admin ? 'LOCK' : 'ADMIN',
+      lockBg: admin ? '#e8590c' : tab === 'lock' ? '#17120e' : 'transparent',
+      lockFg: admin ? '#fff5ec' : tab === 'lock' ? '#fbf7f0' : '#a2988f',
+      shackle: admin ? 'translateX(5px)' : 'none',
+      lockNow: this.lockAdmin,
+      adminIdle,
+      adminPin: pin,
+      adminLeftLabel: Math.floor(adminLeft / 60) + ':' + String(adminLeft % 60).padStart(2, '0'),
+
+      pinDots: Array.from({ length: pin.length }, (_, i) => ({
+        bg: i < pinEntry.length ? '#e8590c' : 'transparent',
+        border: i < pinEntry.length ? '#e8590c' : pinError ? '#c02b16' : '#4a3f36'
+      })),
+      pinMsg: cooling ? 'TOO MANY TRIES · ' + cooldown + 'S'
+        : pinError ? 'WRONG PIN · ' + Math.max(0, 5 - tries) + ' LEFT'
+        : 'ENTER THE ' + pin.length + '-DIGIT ADMIN PIN',
+      pinMsgColor: cooling || pinError ? '#ff9d5c' : '#8a807a',
+      pinKeys: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map(k => ({
+        label: k,
+        bg: cooling ? '#efe8dc' : (k === 'C' || k === '⌫') ? '#fbf7f0' : '#fff',
+        br: cooling ? '#dcd3c6' : '#17120e',
+        fg: cooling ? '#a2988f' : '#17120e',
+        press: () => this.pressKey(k)
+      })),
+
       sims: [
         { label: 'On site', go: () => this.set({ mode: 'in', distance: 34 }) },
         { label: 'Walk out of fence', go: this.startGrace },
         { label: 'Logged out', go: () => this.set({ mode: 'out', queued: 1 }) },
         { label: 'Look-alike wi-fi', go: () => this.set({ mode: 'spoof', distance: 4200 }) },
         { label: 'GPS off', go: () => this.set({ mode: 'nogps' }) },
-        { label: offline ? 'Back online' : 'Go offline', go: () => this.setState({ offline: !offline, queued: offline ? queued : 3, tab: 'sync' }) }
+        { label: offline ? 'Back online' : 'Go offline', go: () => this.setState({ offline: !offline, queued: offline ? queued : 3, tab: 'sync' }) },
+        { label: admin ? 'Lock admin' : 'Admin keypad', go: admin ? this.lockAdmin : this.openKeypad }
       ],
       schema: [
         { c: 'A', k: 'staff_id', v: 'EMP-0412' },
@@ -476,7 +613,9 @@ class Component extends DCLogic {
         { k: 'POST /sessions', v: 'Phone sends a closed session with both timestamps, coordinates and the router it saw. Server appends one row.' },
         { k: 'Idempotency key', v: 'staff_id + login_at. A retry after a dropped connection can never duplicate a row.' },
         { k: 'Who writes', v: 'A service account with edit rights on that Drive folder. Staff devices never touch the file directly.' },
-        { k: 'Server-side truth', v: 'Timestamps are stamped by the server, not the handset, so a changed phone clock can\u2019t shift a shift.' }
+        { k: 'Server-side truth', v: 'Timestamps are stamped by the server, not the handset, so a changed phone clock can\u2019t shift a shift.' },
+        { k: 'Settings are read-only to the phone', v: 'GET /sites/:id returns fence, grace, allow-list and min accuracy. The handset never PUTs them back \u2014 an admin edit goes device \u2192 server as an authenticated admin call, and every other phone picks it up on next poll.' },
+        { k: 'The PIN is UI only', v: 'It hides the Rules screen from staff. It is not an auth token: the server validates rows against its own copy of the site config and rejects anything outside it.' }
       ]
     };
   }
