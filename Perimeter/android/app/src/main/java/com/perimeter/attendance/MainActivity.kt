@@ -56,8 +56,13 @@ class MainActivity : ComponentActivity() {
 
     private val requestFine = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
-        if (result[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
+    ) {
+        // Read the real permission state rather than the result map. The map
+        // only contains what was actually asked for, so on a phone where fine
+        // location was already granted and only NEARBY_WIFI_DEVICES was missing,
+        // looking up ACCESS_FINE_LOCATION here returns null and the service
+        // would never start.
+        if (hasFineLocation()) {
             // Background location has to be a second, separate ask with its own
             // explanation. A single combined prompt gets denied.
             requestBackground()
@@ -75,15 +80,21 @@ class MainActivity : ComponentActivity() {
         setContent { PerimeterTheme { AppRoot() } }
     }
 
+    private fun granted(permission: String) =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    private fun hasFineLocation() = granted(Manifest.permission.ACCESS_FINE_LOCATION)
+
     private fun askPermissions() {
         val wanted = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Without NEARBY_WIFI_DEVICES the BSSID reads back as the
+            // 02:00:00:00:00:00 sentinel and the trust rule fails closed, so
+            // the app would never clock anyone in.
             wanted += Manifest.permission.NEARBY_WIFI_DEVICES
             wanted += Manifest.permission.POST_NOTIFICATIONS
         }
-        val missing = wanted.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
+        val missing = wanted.filterNot { granted(it) }
         if (missing.isEmpty()) {
             requestBackground()
             AttendanceService.start(this)
