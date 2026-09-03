@@ -37,8 +37,8 @@ Everything you must change is in one place —
 | `lat` / `lng` | Your site centre |
 | `radiusM` | Fence radius, metres |
 | `staffId` / `staffName` | Per phone |
-| `endpointUrl` | Your Apps Script `/exec` URL |
-| `sharedSecret` | Must match `SHARED_SECRET` in `AppendSession.gs` |
+| `endpointUrl` | Your n8n **Production** webhook URL |
+| `webhookToken` | Any long random string; the same one goes into n8n |
 
 **Finding the BSSID:** connect to the office wi-fi, then in Android Studio's
 Logcat filter for `TrustCheck`, or use any "wifi analyzer" app — it is the
@@ -47,7 +47,16 @@ Logcat filter for `TrustCheck`, or use any "wifi analyzer" app — it is the
 Get this wrong and the app is not broken — it just never clocks anyone in,
 because the trust rule fails closed by design.
 
-## 3. Build
+## 3. Set up the backend
+
+The phone posts each finished shift to an **n8n** webhook, and n8n writes the
+row to Google Sheets. n8n holds the Google credentials so the handset never
+does.
+
+Follow **`n8n/README.md`** — import the workflow, fill in three blanks, activate
+it, and prove it with the `curl` command there before you touch a phone.
+
+## 4. Build
 
 **Run ▶** to install on a connected phone, or
 **Build → Build Bundle(s) / APK(s) → Build APK(s)** for a file you can share.
@@ -98,9 +107,10 @@ by inspection and obvious the moment it could be executed.
   behind the PIN. A rooted phone could therefore change what gets *recorded*,
   not merely what is displayed. This is the single biggest gap versus the spec —
   see `project/HANDOFF.md` section 2.
-- **The shared secret ships in the APK.** Anyone who unpacks it can post rows as
-  any `staff_id`. A real backend holding the credential fixes this; Apps Script
-  called directly from the phone cannot.
+- **The webhook token ships in the APK.** Anyone who unpacks it can post rows as
+  any `staff_id`. Closing that needs per-device credentials issued at enrolment.
+  n8n does at least keep the *Google* credentials off the handset, which was the
+  bigger hole.
 - **The Rules screen is read-only.** It shows the config and locks it away from
   staff, which is what was asked. Editing fields in-app is not wired up yet —
   change `SiteConfig.DEFAULT` and rebuild, or add `TextField`s and call

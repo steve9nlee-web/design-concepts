@@ -31,7 +31,7 @@ data class SiteConfig(
     val staffId: String,
     val staffName: String,
     val endpointUrl: String,
-    val sharedSecret: String
+    val webhookToken: String
 ) {
     /** Delegates to the unit-tested implementation; there is only one. */
     fun bssidAllowed(bssid: String?): Boolean =
@@ -61,8 +61,8 @@ data class SiteConfig(
             adminIdleSeconds = 120,
             staffId = "EMP-0412",     // <- set per phone
             staffName = "Nadia Rahman",
-            endpointUrl = "",         // <- your Apps Script /exec URL
-            sharedSecret = ""         // <- must match SHARED_SECRET in AppendSession.gs
+            endpointUrl = "",         // <- your n8n Production webhook URL
+            webhookToken = ""         // <- any long random string; paste the same one into n8n
         )
 
         fun prefs(ctx: Context): SharedPreferences =
@@ -91,7 +91,7 @@ data class SiteConfig(
                 staffId = p.getString("staffId", d.staffId) ?: d.staffId,
                 staffName = p.getString("staffName", d.staffName) ?: d.staffName,
                 endpointUrl = p.getString("endpointUrl", d.endpointUrl) ?: d.endpointUrl,
-                sharedSecret = p.getString("sharedSecret", d.sharedSecret) ?: d.sharedSecret
+                webhookToken = p.getString("webhookToken", d.webhookToken) ?: d.webhookToken
             )
         }
 
@@ -111,7 +111,7 @@ data class SiteConfig(
                 .putString("staffId", c.staffId)
                 .putString("staffName", c.staffName)
                 .putString("endpointUrl", c.endpointUrl)
-                .putString("sharedSecret", c.sharedSecret)
+                .putString("webhookToken", c.webhookToken)
                 .apply()
         }
     }

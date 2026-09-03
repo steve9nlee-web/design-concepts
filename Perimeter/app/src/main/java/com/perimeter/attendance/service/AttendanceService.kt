@@ -248,7 +248,7 @@ class AttendanceService : Service() {
     private fun drainQueue() {
         val pending = store.pending()
         for (s in pending) {
-            val r = AppendSessionClient.post(cfg.endpointUrl, cfg.sharedSecret, s)
+            val r = AppendSessionClient.post(cfg.endpointUrl, cfg.webhookToken, s)
             if (r.ok) {
                 store.markSynced(s.rowKey)
             } else {

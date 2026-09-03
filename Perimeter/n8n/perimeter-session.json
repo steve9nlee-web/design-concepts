@@ -1,0 +1,125 @@
+{
+  "name": "Perimeter — attendance session to Google Sheet",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "perimeter-session",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Phone posts a session",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ],
+      "webhookId": "perimeter-session"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check the shared token, then hand on a clean row.\n//\n// The token only keeps strangers out of the webhook. It does not prove the\n// request came from a company phone, so everything below is treated as a\n// CLAIM by the handset, not as fact.\n\nconst EXPECTED_TOKEN = 'PUT-YOUR-TOKEN-HERE';\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const headers = item.json.headers || {};\n  const body = item.json.body || {};\n\n  const supplied = headers['x-perimeter-token'];\n  if (EXPECTED_TOKEN !== 'PUT-YOUR-TOKEN-HERE' && supplied !== EXPECTED_TOKEN) {\n    throw new Error('Rejected: bad or missing x-perimeter-token header');\n  }\n\n  if (!body.row_key || !body.staff_id || !body.login_at) {\n    throw new Error('Rejected: row_key, staff_id and login_at are all required');\n  }\n\n  // Server receipt time. The phone's clock is not authoritative.\n  const receivedAt = new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n  const claimed = Date.parse(body.logout_at || body.login_at);\n\n  // Signed, in minutes: positive means the phone claims a time in the FUTURE.\n  //\n  // Only a future claim is evidence of a wound-forward clock. A row arriving\n  // hours or days late is completely normal — that is the offline queue doing\n  // its job after a weekend with no signal — so age alone must never be\n  // treated as suspicious, or every delayed sync lands flagged and someone\n  // has to defend their own timesheet.\n  const driftMin = Number.isFinite(claimed)\n    ? Math.round((claimed - Date.now()) / 60000)\n    : null;\n\n  let flag = body.flag || 'OK';\n  if (!body.logout_at) flag = 'OPEN';\n  else if (driftMin !== null && driftMin > 5) flag = 'CLOCK AHEAD';\n\n  out.push({\n    json: {\n      row_key: body.row_key,\n      staff_id: body.staff_id,\n      name: body.name || '',\n      date: body.date || '',\n      login_at: body.login_at,\n      logout_at: body.logout_at || '',\n      duration_min: body.duration_min ?? '',\n      duration_hhmm: body.duration_hhmm || '',\n      site: body.site || '',\n      ssid: body.ssid || '',\n      bssid: body.bssid || '',\n      bssid_match: body.bssid_match === true ? 'YES' : 'NO',\n      lat: body.lat ?? '',\n      lng: body.lng ?? '',\n      accuracy_m: body.accuracy_m ?? '',\n      method: body.method || 'AUTO',\n      flag: flag,\n      device_id: body.device_id || '',\n      received_at: receivedAt,\n      drift_min: driftMin ?? ''\n    }\n  });\n}\n\nreturn out;"
+      },
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Check token and shape the row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "PUT-YOUR-SPREADSHEET-ID-HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sep_2026",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "row_key"
+          ],
+          "value": {},
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Append or update the row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"ok\",\n  \"row_key\": \"{{ $json.row_key }}\"\n}",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Tell the phone it landed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        540,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Phone posts a session": {
+      "main": [
+        [
+          {
+            "node": "Check token and shape the row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check token and shape the row": {
+      "main": [
+        [
+          {
+            "node": "Append or update the row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update the row": {
+      "main": [
+        [
+          {
+            "node": "Tell the phone it landed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "perimeter-attendance"
+  },
+  "tags": []
+}

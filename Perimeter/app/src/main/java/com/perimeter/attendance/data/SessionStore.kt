@@ -33,13 +33,25 @@ data class Session(
     val flag: String,
     val synced: Boolean
 ) {
+    /**
+     * The wire format, and also the sheet's column names.
+     *
+     * Keys are deliberately identical to the spreadsheet headers so n8n's
+     * Google Sheets node can map straight in with "Map Automatically". Duration
+     * is computed here rather than left to a spreadsheet formula — pre-filled
+     * formulas run out at whatever row they were dragged to, and an appended
+     * row past that point silently shows nothing.
+     */
     fun toJson(): JSONObject = JSONObject().apply {
         put("row_key", rowKey)
         put("staff_id", staffId)
         put("name", staffName)
+        put("date", day(loginAt))
         put("site", siteId)
         put("login_at", iso(loginAt))
-        put("logout_at", logoutAt?.let { iso(it) } ?: JSONObject.NULL)
+        put("logout_at", logoutAt?.let { iso(it) } ?: "")
+        put("duration_min", durationMin ?: "")
+        put("duration_hhmm", durationHhmm ?: "")
         put("ssid", ssid)
         put("bssid", bssid)
         put("bssid_match", bssidMatch)
@@ -51,11 +63,21 @@ data class Session(
         put("flag", flag)
     }
 
+    /** Null while the shift is still open. */
+    val durationMin: Long?
+        get() = logoutAt?.let { (it - loginAt) / 60_000L }
+
+    val durationHhmm: String?
+        get() = durationMin?.let { "%d:%02d".format(it / 60, it % 60) }
+
     companion object {
         private fun fmt(pattern: String): SimpleDateFormat =
             SimpleDateFormat(pattern, Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
 
         fun iso(ms: Long): String = fmt("yyyy-MM-dd'T'HH:mm:ss'Z'").format(Date(ms))
+
+        /** Calendar date of the shift, for the sheet's date column. */
+        fun day(ms: Long): String = fmt("yyyy-MM-dd").format(Date(ms))
 
         fun fromJson(o: JSONObject): Session = Session(
             rowKey = o.getString("rowKey"),
