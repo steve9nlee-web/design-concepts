@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.perimeter.attendance.config.SiteConfig
 import com.perimeter.attendance.data.Session
 import com.perimeter.attendance.service.AttendanceService
+import com.perimeter.attendance.service.Phase
 import com.perimeter.attendance.service.TrustResult
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -87,7 +88,7 @@ fun StatusScreen(state: AttendanceService.UiState, cfg: SiteConfig, onStay: () -
         )
 
         when (state.phase) {
-            AttendanceService.Phase.IN -> Card(P.Green) {
+            Phase.IN -> Card(P.Green) {
                 Eyebrow("LOGGED IN · AUTO", P.MintText)
                 Spacer(Modifier.height(12.dp))
                 Text("You're on site", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEAFFF4))
@@ -102,7 +103,7 @@ fun StatusScreen(state: AttendanceService.UiState, cfg: SiteConfig, onStay: () -
                 }
             }
 
-            AttendanceService.Phase.PENDING_OUT -> Card(P.Orange) {
+            Phase.PENDING_OUT -> Card(P.Orange) {
                 Eyebrow("LEFT THE FENCE · HOLDING", P.Cream)
                 Spacer(Modifier.height(12.dp))
                 Text(
@@ -133,7 +134,7 @@ fun StatusScreen(state: AttendanceService.UiState, cfg: SiteConfig, onStay: () -
                 }
             }
 
-            AttendanceService.Phase.PENDING_IN -> Card(P.Ink) {
+            Phase.PENDING_IN -> Card(P.Ink) {
                 Eyebrow("VERIFYING", Color(0xFFFF9D5C))
                 Spacer(Modifier.height(12.dp))
                 Text(
@@ -147,7 +148,7 @@ fun StatusScreen(state: AttendanceService.UiState, cfg: SiteConfig, onStay: () -
                 )
             }
 
-            AttendanceService.Phase.OUT -> OutlinedCard {
+            Phase.OUT -> OutlinedCard {
                 Eyebrow("NOT ON SITE")
                 Spacer(Modifier.height(10.dp))
                 Text("Day closed", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = P.Ink)

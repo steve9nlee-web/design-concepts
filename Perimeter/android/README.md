@@ -3,11 +3,14 @@
 Kotlin + Jetpack Compose implementation of `../project/Perimeter - Auto Attendance App.dc.html`,
 built to the spec in `../project/HANDOFF.md`.
 
-**This has never been compiled.** It was written in an environment with no Android
-SDK, so expect to fix a compile error or two on first build. Nothing here is
-guesswork about *behaviour* — the state machine and the trust rule follow the
-handoff — but import names and API signatures are the kind of thing that only a
-compiler settles.
+**Partly verified.** The environment this was written in had no Android SDK, so
+the Android half — Compose UI, the service, anything touching `Context` — has
+never been compiled. Expect to fix an import or a signature on first build.
+
+The half that decides someone's pay *is* verified. `AttendanceLogic.kt` holds
+the trust rule and the dwell/grace state machine with every Android type kept
+out on purpose, so it compiles and runs on a plain JVM. **21 unit tests pass**
+(`./gradlew test`), and writing them caught a real bug — see below.
 
 ---
 
@@ -55,6 +58,18 @@ and **keep it safe** — lose it and you cannot update the app in place.
 
 ---
 
+## The bug the tests caught
+
+The first draft used `0L` to mean both "this run hasn't started" and a real
+timestamp. Epoch 0 never occurs on a live phone, so it would not have shown up
+in casual testing — but any run that *did* begin at 0 restarted its own clock on
+every observation, meaning **a grace period could never expire and a staff
+member would stay clocked in forever**. The marks are now nullable, which makes
+the state unrepresentable rather than merely unlikely.
+
+That is the argument for keeping this logic Android-free: the bug was invisible
+by inspection and obvious the moment it could be executed.
+
 ## What is implemented
 
 - **The trust rule** (`TrustCheck.kt`) — SSID, BSSID allow-list and a GPS fix
@@ -91,5 +106,6 @@ and **keep it safe** — lose it and you cannot update the app in place.
 - **OEM battery managers** kill foreground services on many Chinese Android
   skins. Before rollout, add the app to the "protected apps" list on each phone,
   or sessions will die mid-shift and land as `OPEN`.
-- **No tests.** The trust rule and the dwell/grace transitions are the two things
-  worth unit-testing first; both are pure enough to test without a device.
+- **Only the decision logic is tested.** The service shell, the offline queue and
+  the UI have no tests, because they need a device or a Robolectric setup. The
+  queue's ordering guarantee is the next thing worth covering.

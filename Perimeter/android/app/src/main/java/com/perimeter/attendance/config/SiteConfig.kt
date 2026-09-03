@@ -2,6 +2,7 @@ package com.perimeter.attendance.config
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.perimeter.attendance.service.AttendanceLogic
 import java.security.MessageDigest
 import java.security.SecureRandom
 
@@ -32,15 +33,9 @@ data class SiteConfig(
     val endpointUrl: String,
     val sharedSecret: String
 ) {
-    /** BSSIDs are compared lower-case; vendors differ on casing. */
-    fun bssidAllowed(bssid: String?): Boolean {
-        if (bssid.isNullOrBlank()) return false
-        val b = bssid.lowercase()
-        // Android hands back this sentinel when the permission or the location
-        // toggle is missing. Never treat it as a match — fail closed.
-        if (b == "02:00:00:00:00:00") return false
-        return allowedBssids.any { it.lowercase() == b }
-    }
+    /** Delegates to the unit-tested implementation; there is only one. */
+    fun bssidAllowed(bssid: String?): Boolean =
+        AttendanceLogic.bssidAllowed(bssid, allowedBssids)
 
     companion object {
         private const val PREFS = "perimeter_site"

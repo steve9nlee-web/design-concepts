@@ -52,4 +52,9 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // AttendanceLogic is deliberately free of Android types so the rules that
+    // decide someone's pay can be tested on a plain JVM: ./gradlew test
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.0.21")
 }

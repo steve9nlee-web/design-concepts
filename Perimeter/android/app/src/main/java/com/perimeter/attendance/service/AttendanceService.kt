@@ -49,8 +49,6 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class AttendanceService : Service() {
 
-    enum class Phase { OUT, PENDING_IN, IN, PENDING_OUT }
-
     data class UiState(
         val phase: Phase = Phase.OUT,
         val trust: TrustResult? = null,
@@ -89,9 +87,9 @@ class AttendanceService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO)
 
     private var cfg: SiteConfig = SiteConfig.DEFAULT
-    private var phase = Phase.OUT
-    private var satisfiedSince: Long = 0L
-    private var violatedSince: Long = 0L
+    /** All transition decisions live in [AttendanceLogic], which is unit-tested. */
+    private var machine = MachineState()
+    private val phase: Phase get() = machine.phase
     private var lastTrust: TrustResult? = null
 
     private val callback = object : LocationCallback() {
@@ -111,7 +109,7 @@ class AttendanceService : Service() {
         // rather than silently dropping it — an unclosed row is a payroll question,
         // not something to hide.
         store.openSession()?.let {
-            phase = Phase.IN
+            machine = MachineState(Phase.IN, satisfiedSince = it.loginAt)
             _state.value = _state.value.copy(phase = Phase.IN, sessionStart = it.loginAt)
         }
     }
@@ -128,14 +126,15 @@ class AttendanceService : Service() {
 
         when (intent?.action) {
             ACTION_STAY -> {
-                // Cancel a pending logout. Nothing is written.
-                if (phase == Phase.PENDING_OUT) {
-                    phase = Phase.IN
-                    violatedSince = 0L
+                // Cancel a pending logout. Nothing is written, and the grace
+                // mark is dropped so leaving again gets a full fresh period.
+                if (machine.phase == Phase.PENDING_OUT) {
+                    machine = MachineState(Phase.IN, satisfiedSince = System.currentTimeMillis())
                     pushState()
+                    updateNotification()
                 }
             }
-            ACTION_LOGOUT_NOW -> closeSession(reason = "MANUAL")
+            ACTION_LOGOUT_NOW -> logoutNow()
             ACTION_SYNC -> scope.launch { drainQueue() }
         }
 
@@ -167,40 +166,36 @@ class AttendanceService : Service() {
         lastTrust = trust
         val now = System.currentTimeMillis()
 
-        if (trust.trusted) {
-            violatedSince = 0L
-            if (satisfiedSince == 0L) satisfiedSince = now
-            when (phase) {
-                Phase.OUT, Phase.PENDING_IN -> {
-                    phase = Phase.PENDING_IN
-                    if (now - satisfiedSince >= cfg.dwellSeconds * 1000L) {
-                        openSession(trust, loc)
-                    }
-                }
-                // Re-entry inside the grace window cancels the pending logout.
-                Phase.PENDING_OUT -> phase = Phase.IN
-                Phase.IN -> Unit
-            }
-        } else {
-            satisfiedSince = 0L
-            if (violatedSince == 0L) violatedSince = now
-            when (phase) {
-                Phase.IN, Phase.PENDING_OUT -> {
-                    phase = Phase.PENDING_OUT
-                    if (now - violatedSince >= cfg.graceSeconds * 1000L) {
-                        closeSession(reason = "AUTO")
-                    }
-                }
-                Phase.PENDING_IN -> phase = Phase.OUT
-                Phase.OUT -> Unit
-            }
+        val decision = AttendanceLogic.step(
+            prev = machine,
+            o = Observation(
+                ssidMatches = trust.ssidOk,
+                bssidAllowed = trust.bssidOk,
+                accuracyM = trust.accuracyM,
+                distanceM = trust.distanceM,
+                hasFix = trust.accuracyM >= 0
+            ),
+            t = Thresholds(
+                radiusM = cfg.radiusM,
+                minAccuracyM = cfg.minAccuracyM,
+                dwellSeconds = cfg.dwellSeconds,
+                graceSeconds = cfg.graceSeconds
+            ),
+            now = now
+        )
+        machine = decision.state
+
+        when (decision.effect) {
+            Effect.OPEN_SESSION -> openSession(trust, loc, now)
+            Effect.CLOSE_SESSION -> writeClose(reason = "AUTO")
+            Effect.NONE -> Unit
         }
-        pushState()
+
+        pushState(decision.graceSecondsLeft, decision.dwellSecondsLeft)
         updateNotification()
     }
 
-    private fun openSession(trust: TrustResult, loc: Location) {
-        val now = System.currentTimeMillis()
+    private fun openSession(trust: TrustResult, loc: Location, now: Long) {
         val session = Session(
             rowKey = "${cfg.staffId}|${Session.iso(now)}",
             staffId = cfg.staffId,
@@ -220,30 +215,33 @@ class AttendanceService : Service() {
             synced = false
         )
         store.upsert(session)
-        phase = Phase.IN
-        satisfiedSince = 0L
         // Two-phase write: the open row lands now, so HR sees the shift even if
         // the app dies before logout.
         scope.launch { drainQueue() }
     }
 
-    private fun closeSession(reason: String) {
-        val open = store.openSession() ?: run {
-            phase = Phase.OUT
-            pushState()
-            return
-        }
-        val now = System.currentTimeMillis()
-        val flag = when {
-            lastTrust != null && lastTrust!!.accuracyM > cfg.minAccuracyM -> "LOW GPS"
-            else -> "OK"
-        }
-        store.upsert(open.copy(logoutAt = now, flag = flag, method = reason, synced = false))
-        phase = Phase.OUT
-        violatedSince = 0L
+    /** Close whatever session is open. Safe to call when there isn't one. */
+    private fun writeClose(reason: String) {
+        val open = store.openSession() ?: return
+        val t = lastTrust
+        val flag = if (t != null && t.accuracyM > cfg.minAccuracyM) "LOW GPS" else "OK"
+        store.upsert(
+            open.copy(
+                logoutAt = System.currentTimeMillis(),
+                flag = flag,
+                method = reason,
+                synced = false
+            )
+        )
+        scope.launch { drainQueue() }
+    }
+
+    /** The "Log out now" button: close the row and reset the machine. */
+    private fun logoutNow() {
+        writeClose(reason = "MANUAL")
+        machine = MachineState(Phase.OUT)
         pushState()
         updateNotification()
-        scope.launch { drainQueue() }
     }
 
     /** Push every unsynced row, oldest first. Order matters for the sheet. */
@@ -263,17 +261,9 @@ class AttendanceService : Service() {
         _state.value = _state.value.copy(lastError = null)
     }
 
-    private fun pushState() {
-        val now = System.currentTimeMillis()
-        val graceLeft = if (phase == Phase.PENDING_OUT && violatedSince > 0)
-            ((cfg.graceSeconds * 1000L - (now - violatedSince)) / 1000L).toInt().coerceAtLeast(0)
-        else 0
-        val dwellLeft = if (phase == Phase.PENDING_IN && satisfiedSince > 0)
-            ((cfg.dwellSeconds * 1000L - (now - satisfiedSince)) / 1000L).toInt().coerceAtLeast(0)
-        else 0
-
+    private fun pushState(graceLeft: Int = 0, dwellLeft: Int = 0) {
         _state.value = _state.value.copy(
-            phase = phase,
+            phase = machine.phase,
             trust = lastTrust,
             sessionStart = store.openSession()?.loginAt,
             graceSecondsLeft = graceLeft,
