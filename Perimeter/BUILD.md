@@ -1,7 +1,7 @@
 # Perimeter — Android app
 
-Kotlin + Jetpack Compose implementation of `../project/Perimeter - Auto Attendance App.dc.html`,
-built to the spec in `../project/HANDOFF.md`.
+Kotlin + Jetpack Compose implementation of `project/Perimeter - Auto Attendance App.dc.html`,
+built to the spec in `project/HANDOFF.md`.
 
 **Partly verified.** The environment this was written in had no Android SDK, so
 the Android half — Compose UI, the service, anything touching `Context` — has
@@ -16,9 +16,11 @@ out on purpose, so it compiles and runs on a plain JVM. **21 unit tests pass**
 
 ## 1. Open it
 
-Android Studio → **File → Open** → select this `android/` folder (not the repo
-root). Let it sync; the first sync downloads Gradle 8.9, AGP 8.6.1 and the
-dependencies, which takes a few minutes.
+The Gradle project sits at the repository root, so Android Studio can open the
+repo directly — either **File → Open** on the cloned folder, or
+**File → New → Project from Version Control** to clone and open in one move.
+The first sync downloads Gradle 8.9, AGP 8.6.1 and the dependencies, which takes
+a few minutes.
 
 You need **JDK 17** (Android Studio bundles it: Settings → Build Tools → Gradle →
 Gradle JDK → jbr-17) and **SDK Platform 35** (Tools → SDK Manager).
@@ -95,7 +97,7 @@ by inspection and obvious the moment it could be executed.
   phone only reads them. There is no server, so an admin edits them locally
   behind the PIN. A rooted phone could therefore change what gets *recorded*,
   not merely what is displayed. This is the single biggest gap versus the spec —
-  see `HANDOFF.md` section 2.
+  see `project/HANDOFF.md` section 2.
 - **The shared secret ships in the APK.** Anyone who unpacks it can post rows as
   any `staff_id`. A real backend holding the credential fixes this; Apps Script
   called directly from the phone cannot.

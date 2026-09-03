@@ -18,8 +18,21 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 
 **Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
 
+## The Android app
+
+The design has since been implemented as a real Kotlin/Compose app. The Gradle
+project lives at the root of this repository, so Android Studio opens it
+directly — no subfolder to hunt for.
+
+**Start here: `BUILD.md`** — what to fill in, how to build, and what is and is
+not verified.
+
 ## Bundle contents
 
 - `README.md` — this file
 - `chats/` — conversation transcripts (read these!)
-- `project/` — the `Perimeter: Staff WiFi Auto-Login App` project files (HTML prototypes, assets, components)
+- `project/` — the original Claude Design export (HTML prototype, spreadsheet,
+  Apps Script, developer handoff)
+- `app/`, `settings.gradle.kts`, `gradlew` — the Android app. Open this repo in
+  Android Studio and it builds.
+- `BUILD.md` — build instructions for the Android app
