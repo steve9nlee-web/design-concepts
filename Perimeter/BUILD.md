@@ -14,6 +14,25 @@ out on purpose, so it compiles and runs on a plain JVM. **21 unit tests pass**
 
 ---
 
+## 0. Building without Android Studio
+
+If you have a terminal and a JDK but no Android Studio — a cloud session, or a
+bare Linux box — this installs the SDK headlessly and builds:
+
+```bash
+bash tools/install-android-sdk.sh
+./gradlew test           # 21 unit tests, no device needed
+./gradlew assembleDebug  # APK -> app/build/outputs/apk/debug/
+```
+
+The script needs `dl.google.com` reachable. In a Claude Code cloud session that
+means the environment's network access must be **Custom** with `dl.google.com`
+and `maven.google.com` allowed, and **"Also include default list of common
+package managers"** ticked. Network policy is fixed when a session starts, so
+change it first, then start a new session.
+
+Everything below is the Android Studio route instead.
+
 ## 1. Open it
 
 The Gradle project sits at the repository root, so Android Studio can open the
