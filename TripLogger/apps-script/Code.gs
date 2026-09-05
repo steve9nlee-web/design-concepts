@@ -8,7 +8,7 @@
 var SPREADSHEET_ID = '1e12ex5iKQJEY2OMdDjZc3IF8pH2gZvKLAzKfdZ6ptek';
 var SHEET_GID = 0; // first tab
 
-var HEADERS = ['Date', 'Time', 'Role', 'Trip Time', 'Company', 'Driver', 'Name', 'Description'];
+var HEADERS = ['Date', 'Time', 'Trip Time', 'Company', 'Driver', 'Description'];
 
 function getSheet_() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -33,11 +33,9 @@ function doPost(e) {
     sheet.appendRow([
       data.date || '',
       data.time || '',
-      data.role || '',
       data.tripTime || '',
       data.company || '',
       data.driver || '',
-      data.name || '',
       data.description || ''
     ]);
 

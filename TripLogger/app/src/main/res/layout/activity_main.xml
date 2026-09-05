@@ -51,34 +51,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/role_label"
-            android:textStyle="bold" />
-
-        <RadioGroup
-            android:id="@+id/radioRole"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/radioArthur"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="@string/role_arthur" />
-
-            <RadioButton
-                android:id="@+id/radioDriver"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
-                android:text="@string/role_driver" />
-        </RadioGroup>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:text="@string/trip_time_label"
             android:textStyle="bold" />
 
@@ -136,20 +108,6 @@
                 android:minWidth="0dp"
                 android:text="@string/add_driver" />
         </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/name_label"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/editName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/name_hint"
-            android:inputType="textPersonName|textCapWords" />
 
         <TextView
             android:layout_width="wrap_content"

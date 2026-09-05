@@ -4,19 +4,18 @@ Android app that auto-captures today's date & time and logs trips to your
 Google Sheet
 ([this spreadsheet](https://docs.google.com/spreadsheets/d/1e12ex5iKQJEY2OMdDjZc3IF8pH2gZvKLAzKfdZ6ptek/edit?gid=0#gid=0)).
 
-Each saved entry appends one row: **Date | Time | Role | Trip Time | Company | Driver | Name | Description**
+Each saved entry appends one row: **Date | Time | Trip Time | Company | Driver | Description**
 
 ## App features
 
 - **Date & time** — captured automatically (live clock on screen).
-- **Role** — choose **Arthur** or **Driver**.
-- **Trip Time** — `AM 7am - 7pm`, `OT 4pm - 8pm`, `OT 9pm`, or **Key in time…**
-  (opens a time picker).
+- **Trip Time** — `AM 7am - 7pm`, `OT 4pm`, `OT 8pm`, `OT 9pm`, or
+  **Key in time…** (opens a time picker).
 - **Company** — `Sumtec` or `Hacks`.
 - **Driver** — Arthur (main, default) then Ah Huat, Alex, Adrian in a
   scroll-down list, plus a **+ Add** button to add new drivers (remembered on
   the phone).
-- **Name** and **Description** free-text fields.
+- **Description** free-text field.
 - **Offline safe** — if there's no signal, entries are kept on the phone and
   uploaded automatically next time.
 

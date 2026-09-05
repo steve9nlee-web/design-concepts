@@ -11,7 +11,6 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.RadioButton
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -38,7 +37,8 @@ class MainActivity : AppCompatActivity() {
         private val DEFAULT_DRIVERS = listOf("Arthur", "Ah Huat", "Alex", "Adrian")
         private val TRIP_TIMES = listOf(
             "AM 7am - 7pm",
-            "OT 4pm - 8pm",
+            "OT 4pm",
+            "OT 8pm",
             "OT 9pm",
             "Key in time…"
         )
@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spinnerTripTime: Spinner
     private lateinit var spinnerCompany: Spinner
     private lateinit var spinnerDriver: Spinner
-    private lateinit var editName: EditText
     private lateinit var editDescription: EditText
     private lateinit var btnSave: Button
 
@@ -78,7 +77,6 @@ class MainActivity : AppCompatActivity() {
         spinnerTripTime = findViewById(R.id.spinnerTripTime)
         spinnerCompany = findViewById(R.id.spinnerCompany)
         spinnerDriver = findViewById(R.id.spinnerDriver)
-        editName = findViewById(R.id.editName)
         editDescription = findViewById(R.id.editDescription)
         btnSave = findViewById(R.id.btnSave)
 
@@ -211,11 +209,9 @@ class MainActivity : AppCompatActivity() {
         val entry = JSONObject().apply {
             put("date", dateFormat.format(now))
             put("time", timeFormat.format(now))
-            put("role", if (findViewById<RadioButton>(R.id.radioArthur).isChecked) "Arthur" else "Driver")
             put("tripTime", tripTime)
             put("company", spinnerCompany.selectedItem.toString())
             put("driver", spinnerDriver.selectedItem.toString())
-            put("name", editName.text.toString().trim())
             put("description", editDescription.text.toString().trim())
         }
 
@@ -226,7 +222,6 @@ class MainActivity : AppCompatActivity() {
                 btnSave.isEnabled = true
                 if (ok) {
                     Toast.makeText(this, "Saved to Google Sheet ✓", Toast.LENGTH_SHORT).show()
-                    editName.setText("")
                     editDescription.setText("")
                     editCustomTime.setText("")
                     flushQueue()
