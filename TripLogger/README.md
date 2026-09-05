@@ -9,7 +9,7 @@ Each saved entry appends one row: **Date | Time | Trip Time | Company | Driver |
 ## App features
 
 - **Date & time** — captured automatically (live clock on screen).
-- **Trip Time** — `AM 7am - 7pm`, `OT 4pm`, `OT 8pm`, `OT 9pm`, or
+- **Trip Time** — `AM 7am`, `PM 7pm`, `OT 4pm`, `OT 8pm`, `OT 9pm`, or
   **Key in time…** (opens a time picker).
 - **Company** — `Sumtec` or `Hacks`.
 - **Driver** — Arthur (main, default) then Ah Huat, Alex, Adrian in a

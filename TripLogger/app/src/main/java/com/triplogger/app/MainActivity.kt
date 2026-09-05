@@ -36,7 +36,8 @@ class MainActivity : AppCompatActivity() {
         private const val KEY_QUEUE = "pending_queue"
         private val DEFAULT_DRIVERS = listOf("Arthur", "Ah Huat", "Alex", "Adrian")
         private val TRIP_TIMES = listOf(
-            "AM 7am - 7pm",
+            "AM 7am",
+            "PM 7pm",
             "OT 4pm",
             "OT 8pm",
             "OT 9pm",
