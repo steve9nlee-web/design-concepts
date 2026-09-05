@@ -176,14 +176,63 @@ class MainActivity : AppCompatActivity() {
         input.inputType = InputType.TYPE_TEXT_VARIATION_URI
         AlertDialog.Builder(this)
             .setTitle("Google Sheet Web App URL")
-            .setMessage("Paste the Apps Script Web App URL that saves rows to your Google Sheet (see the setup guide).")
+            .setMessage("Paste the Apps Script Web App URL that saves rows to your Google Sheet (see the setup guide), then tap Save & Test.")
             .setView(input)
-            .setPositiveButton("Save") { _, _ ->
-                prefs().edit().putString(KEY_URL, input.text.toString().trim()).apply()
-                Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
+            .setPositiveButton("Save & Test") { _, _ ->
+                val url = input.text.toString().trim()
+                prefs().edit().putString(KEY_URL, url).apply()
+                testConnection(url)
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun testConnection(url: String) {
+        if (url.isEmpty()) {
+            Toast.makeText(this, "URL is empty", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(this, "Testing…", Toast.LENGTH_SHORT).show()
+        executor.execute {
+            val result: String = try {
+                val conn = URL(url).openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.connectTimeout = 15000
+                conn.readTimeout = 15000
+                conn.instanceFollowRedirects = true
+                val body = readBody(conn)
+                when {
+                    body.contains("Trip Logger web app is running") ->
+                        "✓ Connected!\n\nThe app can reach your Google Sheet script. Saves will now appear in the spreadsheet."
+                    body.contains("accounts.google.com") || body.contains("ServiceLogin") ->
+                        "✗ Google is asking for a login.\n\nIn Apps Script: Deploy → Manage deployments → edit → set 'Who has access' to 'Anyone' → Deploy, then paste the NEW URL here."
+                    body.contains("Sorry, unable to open the file") || body.contains("Page not found") ->
+                        "✗ This URL does not point to a working web app deployment.\n\nIn Apps Script use Deploy → New deployment → Web app, and copy the URL ending in /exec."
+                    else ->
+                        "✗ The URL responded but not with the Trip Logger script.\n\nMake sure you pasted the whole Code.gs into Apps Script and copied the Web app URL ending in /exec."
+                }
+            } catch (e: Exception) {
+                "✗ Could not reach the URL.\n\nCheck the URL is complete and the phone has internet. (${e.javaClass.simpleName})"
+            }
+            runOnUiThread {
+                AlertDialog.Builder(this)
+                    .setTitle("Connection test")
+                    .setMessage(result)
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        }
+    }
+
+    private fun readBody(conn: HttpURLConnection): String {
+        return try {
+            val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+            stream?.bufferedReader()?.use { it.readText() } ?: ""
+        } catch (e: Exception) {
+            ""
+        } finally {
+            conn.disconnect()
+        }
     }
 
     private fun onSave() {
@@ -249,10 +298,9 @@ class MainActivity : AppCompatActivity() {
             conn.instanceFollowRedirects = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(entry.toString()) }
-            // Apps Script answers 200, or 302 redirect to the result page — both mean delivered.
-            val code = conn.responseCode
-            conn.disconnect()
-            code in 200..399
+            // Only count it saved when the script itself confirms — a login page
+            // or error page must not look like success.
+            readBody(conn).contains("\"ok\":true")
         } catch (e: Exception) {
             false
         }
