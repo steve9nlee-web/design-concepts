@@ -102,14 +102,14 @@ class ResultActivity : AppCompatActivity() {
         binding.buttonSave.isEnabled = false
         lifecycleScope.launch(Dispatchers.IO) {
             val id = db.insert(entry)
-            val pushed = SheetSync.pushRow(profile.sheetUrl, profile, entry)
-            if (pushed) db.markSynced(id)
+            val result = SheetSync.pushRow(profile.sheetUrl, profile, entry)
+            if (result.ok) db.markSynced(id)
             photoFile?.delete()
             withContext(Dispatchers.Main) {
                 val msg = when {
-                    pushed -> "Saved and synced to your Google Sheet ✔"
+                    result.ok -> "Saved and synced to your Google Sheet ✔"
                     profile.sheetUrl.isBlank() -> "Saved locally. Add your Sheet URL in Settings to sync."
-                    else -> "Saved locally. Sheet sync failed — will retry later."
+                    else -> "Saved locally, but sheet sync failed:\n${result.message}"
                 }
                 Toast.makeText(this@ResultActivity, msg, Toast.LENGTH_LONG).show()
                 finish()

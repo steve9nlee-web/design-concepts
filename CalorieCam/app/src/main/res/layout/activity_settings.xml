@@ -57,10 +57,18 @@
             android:text="Follow the setup guide in the app repository (docs/google-sheets-setup.md) to create your sheet endpoint. Each saved meal is appended as a row to your Google Sheet on Drive." />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonTestSheet"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Test sheet connection" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSave"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
             android:text="@string/save" />
     </LinearLayout>
 </ScrollView>
