@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ScamCallGuard</string>
+
+    <string name="channel_blocked_calls">Blocked calls</string>
+    <string name="channel_warnings">Scam warnings</string>
+
+    <string name="status_active">Protection is active</string>
+    <string name="status_inactive">Protection is off — enable call screening</string>
+    <string name="db_count">%1$d numbers in local blocklist</string>
+    <string name="enable_protection">Enable call screening</string>
+    <string name="role_unavailable">Call screening is not available on this device</string>
+    <string name="mode_block">Block scam calls automatically</string>
+    <string name="mode_warn">Warn only (calls still ring)</string>
+
+    <string name="section_lookup">Check a number</string>
+    <string name="hint_phone_number">Phone number</string>
+    <string name="check_number">Check number</string>
+    <string name="lookup_invalid">Enter a valid phone number</string>
+    <string name="lookup_hit">⚠️ Flagged: %1$s (%2$s)</string>
+    <string name="lookup_clean">✓ Not in the blocklist</string>
+
+    <string name="section_blocklist">Blocklist</string>
+    <string name="add_number_title">Add number to blocklist</string>
+    <string name="add">Add</string>
+    <string name="hint_label">Label (e.g. Bank impersonation scam)</string>
+    <string name="default_user_label">Reported by me</string>
+    <string name="number_added">Number added to blocklist</string>
+    <string name="hint_feed_url">Blocklist feed URL (https)</string>
+    <string name="update_from_feed">Update from feed</string>
+    <string name="feed_url_missing">Enter a feed URL first</string>
+    <string name="feed_updated">Imported %1$d numbers from feed</string>
+
+    <string name="section_history">Screened calls</string>
+    <string name="history_empty">No scam calls screened yet</string>
+    <string name="action_blocked">BLOCKED</string>
+    <string name="action_warned">WARNED</string>
+
+    <string name="notif_blocked_title">Scam call blocked</string>
+    <string name="notif_warning_title">⚠️ Suspected scam call</string>
+    <string name="notif_body">%1$s — %2$s</string>
+</resources>
