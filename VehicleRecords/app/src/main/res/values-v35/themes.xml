@@ -1,0 +1,7 @@
+<resources>
+    <!-- Android 15 forces edge-to-edge, which lets the form scroll behind the
+         status bar and action bar. Opt out so content stays below them. -->
+    <style name="Theme.VehicleRecords" parent="Theme.Material3.DayNight">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
