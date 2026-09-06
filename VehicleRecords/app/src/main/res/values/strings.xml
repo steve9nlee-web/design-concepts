@@ -30,6 +30,15 @@
     <string name="no_date">No date set</string>
     <string name="cost_value">Cost: %1$s</string>
     <string name="days_left">%1$d days left</string>
+    <string name="due_today">Due today</string>
     <string name="overdue_by">Overdue by %1$d days</string>
     <string name="renewal_line">%1$s: %2$s</string>
+
+    <string name="notif_channel_name">Renewal reminders</string>
+    <string name="notif_channel_desc">Reminders for road tax, insurance and inspection renewals</string>
+    <string name="notif_title_due">Vehicle renewals due!</string>
+    <string name="notif_title_soon">Vehicle renewals coming up</string>
+    <string name="notif_line_overdue">%1$s %2$s overdue by %3$d days</string>
+    <string name="notif_line_due_today">%1$s %2$s is due today</string>
+    <string name="notif_line_soon">%1$s %2$s due in %3$d days (%4$s)</string>
 </resources>

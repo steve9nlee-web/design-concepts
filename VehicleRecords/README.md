@@ -16,9 +16,17 @@ An Android app for keeping track of all your motorcars, motorcycles and vans in 
 
 Each vehicle card on the home screen shows all three renewals with a color-coded countdown:
 
-- 🟢 Green — more than 30 days left
-- 🟠 Orange — due within 30 days
-- 🔴 Red — overdue
+- 🟢 Green — OK (more than 60 days left)
+- 🟡 Yellow — 60 days or less remaining
+- 🔴 Red — due today or overdue
+
+## Reminders
+
+The app checks all renewals once a day (around 9am) and sends a phone
+notification whenever anything is due, overdue, or within 60 days —
+listing each vehicle, the item (road tax / insurance / inspection) and
+days remaining. On Android 13+ the app asks for notification permission
+on first launch; allow it to receive reminders.
 
 ## Using the app
 

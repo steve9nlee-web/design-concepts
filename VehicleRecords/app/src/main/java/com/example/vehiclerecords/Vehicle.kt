@@ -40,6 +40,9 @@ data class Renewal(
     }
 
     companion object {
+        /** Renewals within this many days count as "due soon" (yellow). */
+        const val DUE_SOON_DAYS = 60L
+
         val DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
         fun fromJson(obj: JSONObject?): Renewal {

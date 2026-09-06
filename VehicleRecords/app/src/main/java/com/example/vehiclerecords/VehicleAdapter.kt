@@ -67,7 +67,8 @@ class VehicleAdapter(
         val (status, colorRes) = when {
             days == null -> "" to R.color.status_none
             days < 0 -> ctx.getString(R.string.overdue_by, -days) to R.color.status_overdue
-            days <= 30 -> ctx.getString(R.string.days_left, days) to R.color.status_soon
+            days == 0L -> ctx.getString(R.string.due_today) to R.color.status_overdue
+            days <= Renewal.DUE_SOON_DAYS -> ctx.getString(R.string.days_left, days) to R.color.status_soon
             else -> ctx.getString(R.string.days_left, days) to R.color.status_ok
         }
         if (status.isNotBlank()) parts.add(status)
