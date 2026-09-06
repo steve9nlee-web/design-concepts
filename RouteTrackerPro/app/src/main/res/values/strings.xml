@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">RouteTracker Pro</string>
+
+    <string name="map_start_label">Start (left home WiFi)</string>
+    <string name="map_end_label">End (back on home WiFi)</string>
+    <string name="map_stop_label">Stop %1$d: %2$s–%3$s (%4$s)</string>
+
+    <string name="excel_header">Excel log in Google Drive</string>
+    <string name="excel_unlinked">No Excel file linked yet.</string>
+    <string name="excel_linked">Linked: %1$s\nUpdated automatically after every trip.</string>
+    <string name="btn_choose_excel">Choose Excel file in Drive</string>
+    <string name="btn_sync_now">Update Excel now</string>
+    <string name="excel_sync_ok">Excel file updated.</string>
+    <string name="excel_sync_fail">Could not write the Excel file. Re-link it and check that Google Drive is available.</string>
+    <string name="excel_pick_hint">In the picker, open the Drive tab (☰), pick a folder, and save.</string>
+
+    <string name="home_wifi_unset">Home WiFi: not set</string>
+    <string name="home_wifi_is">Home WiFi: %1$s</string>
+    <string name="btn_use_current_wifi">Use current WiFi as home</string>
+    <string name="switch_monitoring">Auto-track when I leave home WiFi</string>
+    <string name="status_off">Monitoring is off</string>
+    <string name="status_waiting">Waiting — recording starts when home WiFi is lost</string>
+    <string name="status_recording">Recording a trip now…</string>
+    <string name="trips_header">Recorded trips</string>
+    <string name="no_trips">No trips recorded yet.\nSet your home WiFi, enable monitoring, and go somewhere!</string>
+
+    <string name="trip_times">%1$s → %2$s  ·  %3$s</string>
+    <string name="trip_in_progress">Started %1$s — still travelling…</string>
+    <string name="trip_summary">%1$.1f km · %2$d stops</string>
+
+    <string name="detail_header">Departed %1$s · Returned %2$s\nTotal %3$s · %4$.1f km</string>
+    <string name="tl_departed">🏠 %1$s — left home WiFi “%2$s”, travel started</string>
+    <string name="tl_stop">📍 %1$s–%2$s (%3$s) — stopped at %4$s</string>
+    <string name="tl_returned">🏠 %1$s — back on home WiFi “%2$s”, travel ended</string>
+    <string name="export_gpx">Share GPX</string>
+
+    <string name="notif_channel">Route tracking</string>
+    <string name="notif_waiting">On home WiFi — waiting to record</string>
+    <string name="notif_recording">Away from home — recording route</string>
+    <string name="notif_recording_since">Recording since %1$s · %2$d points</string>
+
+    <string name="bg_location_title">Allow location all the time</string>
+    <string name="bg_location_msg">To record your route while the app is in the background, choose “Allow all the time” on the next screen.</string>
+
+    <string name="err_need_location">Location permission is required to read the WiFi name and record routes.</string>
+    <string name="err_no_wifi">Not connected to WiFi (or location is off). Connect to your home WiFi and try again.</string>
+    <string name="err_set_wifi_first">Set your home WiFi first.</string>
+    <string name="wifi_saved">Saved “%1$s” as home WiFi.</string>
+
+    <string name="delete_trip_title">Delete trip</string>
+    <string name="delete_trip_msg">Delete this trip and all its recorded points?</string>
+    <string name="delete">Delete</string>
+</resources>
