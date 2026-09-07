@@ -31,6 +31,19 @@
                 android:textSize="12sp" />
 
             <TextView
+                android:id="@+id/textOverdueBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
+                android:text="@string/overdue_badge"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/textStatusBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -57,6 +70,15 @@
             android:layout_marginTop="4dp"
             android:textColor="@color/text_primary"
             android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/textDeadline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"

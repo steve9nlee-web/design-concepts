@@ -19,7 +19,8 @@ Each work item captures:
    - **URGENT** (red)
    - **WIP** (yellow)
    - **OK** (beige)
-5. **Done ✓ Delete** button — removes the item once the work is finished (with a confirmation dialog)
+5. **Estimated finish date** (optional) — pick a date when adding the item; each card shows "Finish by: …". Once the date passes, the card shows a red **OVERDUE** badge and how many days overdue it is; jobs due today are flagged too.
+6. **Done ✓ Delete** button — removes the item once the work is finished (with a confirmation dialog)
 
 The card colour follows the selected status, so urgent jobs stand out at a glance. All items are saved on the device and survive app restarts. New items appear at the top of the list and default to WIP status.
 

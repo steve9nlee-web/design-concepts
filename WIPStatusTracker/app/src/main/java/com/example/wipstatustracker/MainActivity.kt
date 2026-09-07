@@ -1,6 +1,11 @@
 package com.example.wipstatustracker
 
+import android.app.DatePickerDialog
 import android.os.Bundle
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -17,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: WorkItemAdapter
     private lateinit var emptyText: TextView
     private val items = mutableListOf<WorkItem>()
+    private var pendingDeadlineMillis: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +36,36 @@ class MainActivity : AppCompatActivity() {
         val descriptionInput = findViewById<TextInputEditText>(R.id.editDescription)
         val addButton = findViewById<Button>(R.id.buttonAdd)
         val recycler = findViewById<RecyclerView>(R.id.recyclerItems)
+        val deadlinePicker = findViewById<TextView>(R.id.textDeadlinePicker)
+        val clearDeadlineButton = findViewById<Button>(R.id.buttonClearDeadline)
+
+        deadlinePicker.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            pendingDeadlineMillis?.let { calendar.timeInMillis = it }
+            DatePickerDialog(
+                this,
+                { _, year, month, day ->
+                    val picked = Calendar.getInstance().apply {
+                        set(year, month, day, 12, 0, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    pendingDeadlineMillis = picked.timeInMillis
+                    val formatted = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                        .format(Date(picked.timeInMillis))
+                    deadlinePicker.text = getString(R.string.deadline_prefix, formatted)
+                    clearDeadlineButton.visibility = View.VISIBLE
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
+
+        clearDeadlineButton.setOnClickListener {
+            pendingDeadlineMillis = null
+            deadlinePicker.text = getString(R.string.deadline_not_set)
+            clearDeadlineButton.visibility = View.GONE
+        }
 
         adapter = WorkItemAdapter(
             items,
@@ -52,7 +88,11 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val item = WorkItem(company = company, description = description)
+            val item = WorkItem(
+                company = company,
+                description = description,
+                deadlineMillis = pendingDeadlineMillis
+            )
             items.add(0, item)
             store.save(items)
             adapter.notifyItemInserted(0)
@@ -60,6 +100,9 @@ class MainActivity : AppCompatActivity() {
 
             companyInput.text?.clear()
             descriptionInput.text?.clear()
+            pendingDeadlineMillis = null
+            deadlinePicker.text = getString(R.string.deadline_not_set)
+            clearDeadlineButton.visibility = View.GONE
             companyInput.requestFocus()
             updateEmptyState()
             Toast.makeText(this, R.string.item_added, Toast.LENGTH_SHORT).show()

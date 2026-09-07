@@ -21,8 +21,10 @@ class WorkItemAdapter(
         val card: MaterialCardView = view.findViewById(R.id.cardItem)
         val timestamp: TextView = view.findViewById(R.id.textTimestamp)
         val badge: TextView = view.findViewById(R.id.textStatusBadge)
+        val overdueBadge: TextView = view.findViewById(R.id.textOverdueBadge)
         val company: TextView = view.findViewById(R.id.textCompany)
         val description: TextView = view.findViewById(R.id.textDescription)
+        val deadline: TextView = view.findViewById(R.id.textDeadline)
         val urgentButton: Button = view.findViewById(R.id.buttonUrgent)
         val wipButton: Button = view.findViewById(R.id.buttonWip)
         val okButton: Button = view.findViewById(R.id.buttonOk)
@@ -44,6 +46,40 @@ class WorkItemAdapter(
         holder.timestamp.text = item.formattedTimestamp()
         holder.company.text = item.company
         holder.description.text = item.description
+
+        val deadlineText = item.formattedDeadline()
+        val overdue = item.isOverdue()
+        if (deadlineText == null) {
+            holder.deadline.visibility = View.GONE
+        } else {
+            holder.deadline.visibility = View.VISIBLE
+            when {
+                overdue -> {
+                    holder.deadline.text = context.getString(
+                        R.string.overdue_days, deadlineText, item.overdueDays()
+                    )
+                    holder.deadline.setTextColor(ContextCompat.getColor(context, R.color.status_urgent))
+                }
+                item.isDueToday() -> {
+                    holder.deadline.text = context.getString(R.string.due_today, deadlineText)
+                    holder.deadline.setTextColor(ContextCompat.getColor(context, R.color.status_urgent))
+                }
+                else -> {
+                    holder.deadline.text = context.getString(R.string.finish_by, deadlineText)
+                    holder.deadline.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                }
+            }
+        }
+
+        if (overdue) {
+            holder.overdueBadge.visibility = View.VISIBLE
+            holder.overdueBadge.setBackgroundResource(R.drawable.badge_background)
+            holder.overdueBadge.backgroundTintList = ColorStateList.valueOf(
+                ContextCompat.getColor(context, R.color.status_urgent)
+            )
+        } else {
+            holder.overdueBadge.visibility = View.GONE
+        }
 
         val statusColor: Int
         val statusBackground: Int

@@ -8,6 +8,14 @@
     <string name="status_wip">WIP</string>
     <string name="status_ok">OK</string>
     <string name="delete_done">Done ✓ Delete</string>
+    <string name="deadline_not_set">Estimate date to finish: not set</string>
+    <string name="deadline_prefix">Estimate date to finish: %1$s</string>
+    <string name="finish_by">Finish by: %1$s</string>
+    <string name="overdue_badge">OVERDUE</string>
+    <string name="overdue_days">OVERDUE — was due %1$s (%2$d day(s) ago)</string>
+    <string name="due_today">Finish by: %1$s (today!)</string>
+    <string name="clear_deadline">✕</string>
+    <string name="pick_deadline">Estimated finish date</string>
     <string name="empty_list">No pending work.\nAdd a work item above to start tracking.</string>
     <string name="company_required">Please enter a company name</string>
     <string name="description_required">Please enter a description of the work</string>
