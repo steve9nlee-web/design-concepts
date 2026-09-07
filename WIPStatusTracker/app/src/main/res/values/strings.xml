@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WIPStatusTracker</string>
+    <string name="company_hint">Company Name</string>
+    <string name="description_hint">Description of the work</string>
+    <string name="add_item">Add Work Item</string>
+    <string name="status_urgent">URGENT</string>
+    <string name="status_wip">WIP</string>
+    <string name="status_ok">OK</string>
+    <string name="delete_done">Done ✓ Delete</string>
+    <string name="empty_list">No pending work.\nAdd a work item above to start tracking.</string>
+    <string name="company_required">Please enter a company name</string>
+    <string name="description_required">Please enter a description of the work</string>
+    <string name="item_added">Work item added</string>
+    <string name="item_deleted">Work item deleted</string>
+</resources>
