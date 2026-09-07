@@ -42,6 +42,10 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, CameraActivity::class.java))
         }
 
+        findViewById<Button>(R.id.btn_manual_upload).setOnClickListener {
+            startActivity(Intent(this, ManualEntryActivity::class.java))
+        }
+
         findViewById<Button>(R.id.btn_view_history).setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
         }

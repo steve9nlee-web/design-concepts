@@ -9,20 +9,47 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <ProgressBar
-            android:id="@+id/progressBar"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:visibility="gone" />
+            android:text="@string/manual_entry_title"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
 
         <TextView
-            android:id="@+id/textViewResults"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/processing"
-            android:textSize="14sp"
-            android:layout_marginBottom="6dp" />
+            android:text="@string/manual_entry_intro"
+            android:textSize="13sp"
+            android:layout_marginBottom="12dp" />
+
+        <ImageView
+            android:id="@+id/imagePreview"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:scaleType="fitCenter"
+            android:background="#EEEEEE"
+            android:contentDescription="@string/bill_photo_preview" />
+
+        <TextView
+            android:id="@+id/textPhotoHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/no_photo_selected_yet"
+            android:gravity="center"
+            android:textSize="13sp"
+            android:layout_marginTop="4dp" />
+
+        <Button
+            android:id="@+id/btn_pick_photo"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/upload_bill_photo"
+            android:textSize="15sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="6dp"
+            android:backgroundTint="#4285F4" />
 
         <TextView
             android:id="@+id/textCapturedAt"
@@ -32,16 +59,14 @@
             android:textStyle="italic"
             android:layout_marginBottom="14dp" />
 
-        <include layout="@layout/bill_fields" />
-
-        <Button
-            android:id="@+id/btn_manual_entry"
+        <ProgressBar
+            android:id="@+id/progressBar"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="@string/cant_read_enter_manually"
-            android:textSize="14sp"
-            android:layout_marginBottom="12dp"
-            android:backgroundTint="#b06f00" />
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <include layout="@layout/bill_fields" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -49,17 +74,17 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/btn_retake_photo"
+                android:id="@+id/btn_back"
                 android:layout_width="0dp"
                 android:layout_height="60dp"
                 android:layout_weight="1"
-                android:text="@string/retake"
+                android:text="@string/back"
                 android:textSize="16sp"
                 android:layout_marginEnd="10dp"
                 android:backgroundTint="#888888" />
 
             <Button
-                android:id="@+id/btn_save_to_excel"
+                android:id="@+id/btn_save_manual"
                 android:layout_width="0dp"
                 android:layout_height="60dp"
                 android:layout_weight="1"

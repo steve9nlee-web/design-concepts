@@ -14,17 +14,27 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 data class BillEntry(
-    val date: String,
-    val billNo: String,
-    val company: String,
-    val description: String,
-    val amount: String
-)
+    val companyName: String,   // A
+    val companyNo: String,     // B
+    val address: String,       // C
+    val contact: String,       // D  phone or email
+    val billDate: String,      // E
+    val billNo: String,        // F
+    val category: String,      // G (category part)
+    val description: String,   // G (items / details)
+    val amount: String,        // H
+    val capturedAt: String     // date & time the photo was taken
+) {
+    fun toRow(): List<String> = listOf(
+        companyName, companyNo, address, contact, billDate, billNo,
+        category, description, amount, capturedAt
+    )
+}
 
 /**
  * Reads and writes Bill_Capture.xlsx without any external library: an .xlsx
- * file is a zip of XML parts, and this app only needs one sheet with four
- * text/number columns (written as inline strings, which Excel fully supports).
+ * file is a zip of XML parts, and this app only needs one sheet with text and
+ * number columns (written as inline strings, which Excel fully supports).
  *
  * The master copy lives in app-private storage (no permissions needed); every
  * save also exports a copy to the public Downloads folder.
@@ -32,7 +42,11 @@ data class BillEntry(
 object ExcelManager {
 
     const val FILE_NAME = "Bill_Capture.xlsx"
-    private val HEADER = listOf("Date", "Bill No", "Company", "Description", "Total Amount")
+    private val HEADER = listOf(
+        "Company Name", "Company No", "Address", "Contact",
+        "Bill Date", "Bill No", "Category", "Description",
+        "Total Amount", "Photo Taken At"
+    )
 
     fun masterFile(context: Context): File = File(context.filesDir, FILE_NAME)
 
@@ -60,26 +74,39 @@ object ExcelManager {
         }
         return rows.drop(1) // skip header row
             .filter { it.isNotEmpty() }
-            .map {
-                if (it.size <= 4) {
-                    // Row saved by an older version without the Company column
-                    BillEntry(
-                        date = it.getOrElse(0) { "" },
-                        billNo = it.getOrElse(1) { "" },
-                        company = "",
-                        description = it.getOrElse(2) { "" },
-                        amount = it.getOrElse(3) { "" }
-                    )
-                } else {
-                    BillEntry(
-                        date = it.getOrElse(0) { "" },
-                        billNo = it.getOrElse(1) { "" },
-                        company = it.getOrElse(2) { "" },
-                        description = it.getOrElse(3) { "" },
-                        amount = it.getOrElse(4) { "" }
-                    )
-                }
-            }
+            .map { toEntry(it) }
+    }
+
+    /** Maps a sheet row to a BillEntry, tolerating rows saved by older versions. */
+    private fun toEntry(row: List<String>): BillEntry = when {
+        // Old format: Date, Bill No, [Company,] Description, Total Amount
+        row.size <= 5 -> {
+            val hasCompany = row.size == 5
+            BillEntry(
+                companyName = if (hasCompany) row.getOrElse(2) { "" } else "",
+                companyNo = "",
+                address = "",
+                contact = "",
+                billDate = row.getOrElse(0) { "" },
+                billNo = row.getOrElse(1) { "" },
+                category = "",
+                description = row.getOrElse(if (hasCompany) 3 else 2) { "" },
+                amount = row.getOrElse(if (hasCompany) 4 else 3) { "" },
+                capturedAt = ""
+            )
+        }
+        else -> BillEntry(
+            companyName = row.getOrElse(0) { "" },
+            companyNo = row.getOrElse(1) { "" },
+            address = row.getOrElse(2) { "" },
+            contact = row.getOrElse(3) { "" },
+            billDate = row.getOrElse(4) { "" },
+            billNo = row.getOrElse(5) { "" },
+            category = row.getOrElse(6) { "" },
+            description = row.getOrElse(7) { "" },
+            amount = row.getOrElse(8) { "" },
+            capturedAt = row.getOrElse(9) { "" }
+        )
     }
 
     // ---- xlsx writing -------------------------------------------------------
@@ -132,9 +159,7 @@ object ExcelManager {
         sb.append("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>""")
         sb.append("""<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>""")
         appendRow(sb, HEADER)
-        entries.forEach {
-            appendRow(sb, listOf(it.date, it.billNo, it.company, it.description, it.amount))
-        }
+        entries.forEach { appendRow(sb, it.toRow()) }
         sb.append("</sheetData></worksheet>")
         return sb.toString()
     }
@@ -168,7 +193,6 @@ object ExcelManager {
         }
         val rows = mutableListOf<List<String>>()
         var currentRow: MutableList<String>? = null
-        var cellIsInline = false
         var cellValue = StringBuilder()
         var inValueTag = false
 
@@ -177,10 +201,7 @@ object ExcelManager {
             when (event) {
                 XmlPullParser.START_TAG -> when (parser.name) {
                     "row" -> currentRow = mutableListOf()
-                    "c" -> {
-                        cellIsInline = parser.getAttributeValue(null, "t") == "inlineStr"
-                        cellValue = StringBuilder()
-                    }
+                    "c" -> cellValue = StringBuilder()
                     "v", "t" -> inValueTag = true
                 }
                 XmlPullParser.TEXT -> if (inValueTag) cellValue.append(parser.text)

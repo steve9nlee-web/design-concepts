@@ -1,49 +1,94 @@
 # BillCapture
 
-Android app that photographs bills, extracts Date / Bill No / Description /
-Amount via Google Cloud Vision OCR, and appends each bill as a row in
-`Bill_Capture.xlsx` (exported to Downloads, optionally synced to Google Drive).
+Android app that photographs bills/receipts, extracts the key details with
+**on-device OCR** (no cloud account needed for scanning), and appends each
+bill as a row in `Bill_Capture.xlsx` — exported to Downloads and, when a
+Google account is connected, synced to Google Drive.
 
-This is the complete project for `SETUP_AND_USAGE_GUIDE.md` (kept in
-`Desktop\aaa`). Open this folder directly in Android Studio — no manual
-file-copying needed; skip the guide's Part 1 and go straight to
-**Part 2: Google Cloud Setup**.
+## What it captures (the A–H sections of a bill)
 
-## What you still need to do
+| Column | Section | Example (Kim Poh receipt) |
+|--------|---------|---------------------------|
+| A | Company Name | Kim Poh Restaurant Sdn. Bhd. |
+| B | Company No. | 1199959-D |
+| C | Address | 3321-1, Jalan Perak, 11600 Pulau Pinang |
+| D | Contact No or Email | 017-9515294 |
+| E | Bill Date | 07-09-2026 12:16 |
+| F | Bill No | POS087500 |
+| G | Category + Description | Food: R. Chicken Rice 13.00, Boiled Chicken 10.00, … |
+| H | Total Amount | 31.00 |
+| — | Photo Taken At | date & time the photo was taken (from EXIF) |
 
-1. **Google Cloud** (guide Part 2): enable Cloud Vision API + Google Drive
-   API, create a service account key (JSON), and create an **Android** OAuth
-   client with package name `com.billcapture.app` and your debug SHA-1
-   (`gradlew signingReport`).
-2. Put the service account key at
-   `app/src/main/assets/google_credentials.json` (gitignored).
-3. Run on a device or emulator with Google Play services.
+Every row also records **when the photo was taken** (EXIF capture time, or
+the file's timestamp as a fallback).
 
-Without the credentials file the app still runs — OCR is skipped and you fill
-the four fields manually.
+## Two ways to capture
 
-## Differences from the guide (intentional)
+1. **Scan (OCR)** — *Capture Bill* opens the camera; ML Kit reads the photo
+   on the device (the Chinese model is bundled, so bilingual
+   Chinese/English receipts work, fully offline) and pre-fills all fields
+   A–H for review before saving.
+2. **Manual entry with photo** — if the app can't recognise the bill, use
+   *Upload Photo (Manual Entry)* on the home screen (or *"Can't read it?
+   Enter manually"* on the review screen). Pick or keep the bill photo and
+   fill in each labelled section A–H; the hint on every field says where
+   that information sits on a printed bill. On save the **photo itself is
+   uploaded to Google Drive** (folder `BillCapture Photos`) together with
+   the Excel row, so the original stays reviewable.
 
-- **No Apache POI.** The xlsx is written/read by `ExcelManager.kt` directly
-  (an .xlsx is a zip of XML) — POI is unreliable on Android and adds ~10 MB.
-- **Drive scope is `drive.file`** (only files this app creates), not full
-  `drive` — avoids Google's app-verification requirements.
-- **`requestIdToken` is optional.** Sign-in works once the Android OAuth
-  client (package + SHA-1) exists in your Cloud project. If you want an ID
-  token, paste a *web* client ID into `SessionManager.OAUTH_CLIENT_ID`.
-- **Master xlsx lives in app-private storage**; each save exports a fresh copy
-  to public Downloads (via MediaStore on Android 10+), so no storage
-  permission prompts on modern Android.
+## OCR — no setup required
+
+Scanning uses **ML Kit on-device text recognition** (Chinese + Latin).
+There is no Cloud Vision key, no service account, and it works offline.
+
+## Google Drive sync (optional, one-time setup)
+
+Rows always save to `Bill_Capture.xlsx` in the app and a copy in
+**Downloads**. To also sync the xlsx (and manual-entry photos) to Google
+Drive:
+
+1. Create a project at <https://console.cloud.google.com/> and enable the
+   **Google Drive API**.
+2. Configure the OAuth consent screen (External; add your account as a test
+   user while unverified) and add the `.../auth/drive.file` scope.
+3. Create an **OAuth client ID → Android** with package name
+   `com.billcapture.app` and your signing SHA-1 (`gradlew signingReport`).
+4. In the app, tap **Select Google Drive Account** and sign in.
+
+The scope is `drive.file` (only files this app creates), which avoids
+Google's app-verification requirements.
+
+## Building the APK
+
+- **Android Studio**: open this folder, Build → Build APK.
+- **Command line**: `gradle assembleDebug` (Android SDK 35 required); the
+  APK lands in `app/build/outputs/apk/debug/app-debug.apk`.
+- **GitHub Actions**: the `Build BillCapture APK` workflow builds on every
+  push touching `BillCapture/` — download the `BillCapture-debug-apk`
+  artifact from the workflow run.
 
 ## File map
 
 | File | Role |
 |------|------|
-| `MainActivity.kt` | Home screen, Google Sign-In |
+| `MainActivity.kt` | Home screen, Google Sign-In, entry to all flows |
 | `CameraActivity.kt` | CameraX preview + guide-box overlay + capture |
-| `ProcessingActivity.kt` | Vision OCR call, field extraction, save |
+| `ProcessingActivity.kt` | On-device ML Kit OCR, field review, save |
+| `ManualEntryActivity.kt` | Photo upload + manual A–H entry fallback |
+| `ReceiptParser.kt` | Extracts fields A–H from raw OCR text |
+| `BillRepository.kt` | Shared save path + photo-taken timestamp |
 | `HistoryActivity.kt` / `BillsAdapter.kt` | Bill list |
 | `ExcelManager.kt` | xlsx read/write + Downloads export |
-| `DriveUploader.kt` | Drive REST upload (create/update) |
+| `DriveUploader.kt` | Drive REST upload (xlsx + photos) |
 | `SessionManager.kt` | Sign-in configuration/state |
-| `BitmapUtil.kt` | Photo downscale, EXIF rotation, base64 |
+| `BitmapUtil.kt` | Photo downscale + EXIF rotation |
+
+## Implementation notes
+
+- **No Apache POI.** The xlsx is written/read by `ExcelManager.kt` directly
+  (an .xlsx is a zip of XML) — POI is unreliable on Android and adds ~10 MB.
+- **Master xlsx lives in app-private storage**; each save exports a fresh
+  copy to public Downloads (via MediaStore on Android 10+), so no storage
+  permission prompts on modern Android.
+- Rows written by the previous 4/5-column version of the app are still read
+  and migrated into the new column layout on the next save.

@@ -15,6 +15,7 @@ class BillsAdapter(private val bills: List<BillEntry>) :
         val company: TextView = view.findViewById(R.id.text_company)
         val description: TextView = view.findViewById(R.id.text_description)
         val amount: TextView = view.findViewById(R.id.text_amount)
+        val capturedAt: TextView = view.findViewById(R.id.text_captured_at)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BillViewHolder {
@@ -25,11 +26,19 @@ class BillsAdapter(private val bills: List<BillEntry>) :
 
     override fun onBindViewHolder(holder: BillViewHolder, position: Int) {
         val bill = bills[position]
-        holder.date.text = "Date: ${bill.date}"
+        holder.date.text = "Date: ${bill.billDate}"
         holder.billNo.text = "Bill No: ${bill.billNo}"
-        holder.company.text = "Company: ${bill.company}"
-        holder.description.text = "Description: ${bill.description}"
+        holder.company.text = listOf(bill.companyName, bill.companyNo, bill.contact)
+            .filter { it.isNotBlank() }
+            .joinToString("  ·  ")
+            .ifBlank { "Company: —" }
+        holder.description.text = listOf(bill.category, bill.description)
+            .filter { it.isNotBlank() }
+            .joinToString(": ")
+            .ifBlank { "Description: —" }
         holder.amount.text = "Amount: ${bill.amount}"
+        holder.capturedAt.text =
+            if (bill.capturedAt.isBlank()) "" else "Photo taken: ${bill.capturedAt}"
     }
 
     override fun getItemCount(): Int = bills.size

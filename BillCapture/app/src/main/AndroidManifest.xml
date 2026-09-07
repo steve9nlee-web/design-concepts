@@ -35,6 +35,8 @@
 
         <activity android:name=".ProcessingActivity" />
 
+        <activity android:name=".ManualEntryActivity" />
+
         <activity android:name=".HistoryActivity" />
 
     </application>

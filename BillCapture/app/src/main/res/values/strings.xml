@@ -7,7 +7,42 @@
     <string name="view_history">View History</string>
     <string name="capture">Capture</string>
     <string name="back">Back</string>
+    <string name="retake">Retake</string>
     <string name="save_to_excel">Save to Excel</string>
-    <string name="processing">Processing...</string>
+    <string name="processing">Processing…</string>
     <string name="bill_history">Bill History</string>
+
+    <!-- A–H field hints; letters match the sections of a printed bill -->
+    <string name="hint_company_name">A. Company Name (top line of the bill)</string>
+    <string name="hint_company_no">B. Company No. (e.g. 1199959-D)</string>
+    <string name="hint_address">C. Address (lines under the company name)</string>
+    <string name="hint_contact">D. Contact No or Email</string>
+    <string name="hint_bill_date">E. Bill Date (as printed, e.g. 07-09-2026 12:16)</string>
+    <string name="hint_bill_no">F. Bill No (e.g. POS087500)</string>
+    <string name="hint_category">G. Category (tap to choose or type your own)</string>
+    <string name="hint_description">G. Description (items on the bill)</string>
+    <string name="hint_total_amount">H. Total Amount (RM)</string>
+
+    <string name="photo_taken_at">Photo taken: %1$s</string>
+    <string name="no_photo_found">No photo found — fill the fields manually.</string>
+    <string name="ocr_nothing_found">No text detected. Edit the fields manually, retake, or use manual entry.</string>
+    <string name="ocr_done">Extracted — review each field and edit if needed.</string>
+    <string name="ocr_failed">OCR failed: %1$s\nFill the fields manually or use manual entry.</string>
+    <string name="cant_read_enter_manually">Can\'t read it? Enter manually with photo guide</string>
+
+    <string name="manual_entry_title">Manual Bill Entry</string>
+    <string name="manual_entry_intro">Upload the bill photo, then fill in each section A–H exactly as it appears on the bill. The photo is saved to Google Drive together with the Excel row.</string>
+    <string name="upload_bill_photo">Upload Bill Photo</string>
+    <string name="bill_photo_preview">Bill photo preview</string>
+    <string name="no_photo_selected_yet">No photo selected yet — tap Upload Bill Photo.</string>
+    <string name="photo_load_failed">Could not load that photo. Try another one.</string>
+    <string name="photo_required">Please upload the bill photo first.</string>
+
+    <string name="nothing_to_save">Nothing to save — fill in at least one field</string>
+    <string name="saved_and_synced">Saved to Excel and synced to Google Drive</string>
+    <string name="saved_synced_with_photo">Saved to Excel and synced to Google Drive (photo uploaded too)</string>
+    <string name="saved_locally">Saved to Excel (Downloads/%1$s)</string>
+    <string name="saved_drive_failed">Saved locally; Drive sync failed: %1$s</string>
+
+    <string name="upload_photo_manual">Upload Photo (Manual Entry)</string>
 </resources>
