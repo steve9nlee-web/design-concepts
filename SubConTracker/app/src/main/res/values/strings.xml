@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SubConTracker</string>
+    <string name="subtitle">Sub-contractor work day recorder</string>
+    <string name="connect_google_drive">Connect Google Drive</string>
+    <string name="hint_worker_name">Worker name</string>
+    <string name="label_am_pm">AM / PM</string>
+    <string name="am">AM</string>
+    <string name="pm">PM</string>
+    <string name="record_work_day">RECORD WORK DAY</string>
+    <string name="view_history">View recorded entries</string>
+    <string name="no_entries">No entries recorded yet</string>
+    <string name="error_name_required">Enter the worker\'s name</string>
+    <string name="status_saving">Saving…</string>
+    <string name="status_saved">Recorded %1$s at %2$s %3$s ✓ (saved to Excel in Downloads)</string>
+    <string name="status_drive_ok">Uploaded to Google Drive ✓</string>
+    <string name="status_drive_failed">Drive upload failed: %1$s</string>
+    <string name="status_drive_not_signed_in">Not uploaded to Drive — tap “Connect Google Drive” first.</string>
+    <string name="status_save_failed">Save failed: %1$s</string>
+</resources>
