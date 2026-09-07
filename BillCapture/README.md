@@ -22,13 +22,18 @@ Google account is connected, synced to Google Drive.
 Every row also records **when the photo was taken** (EXIF capture time, or
 the file's timestamp as a fallback).
 
-## Two ways to capture
+## Three ways to capture
 
-1. **Scan (OCR)** — *Capture Bill* opens the camera; ML Kit reads the photo
-   on the device (the Chinese model is bundled, so bilingual
+1. **Upload a photo (auto scan)** — *Upload Bill Photo (Auto Scan)*, the
+   first button on the home screen, picks an existing photo (annotated
+   A–H markings are fine) and runs OCR on it automatically; the review
+   screen opens with the fields pre-filled so you only correct what it
+   missed before saving.
+2. **Scan with the camera** — *Capture Bill* opens the camera; ML Kit reads
+   the photo on the device (the Chinese model is bundled, so bilingual
    Chinese/English receipts work, fully offline) and pre-fills all fields
    A–H for review before saving.
-2. **Manual entry with photo** — if the app can't recognise the bill, use
+3. **Manual entry with photo** — if the app can't recognise the bill, use
    *Upload Photo (Manual Entry)* on the home screen (or *"Can't read it?
    Enter manually"* on the review screen). Pick or keep the bill photo and
    fill in each labelled section A–H; the hint on every field says where

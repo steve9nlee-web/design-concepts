@@ -6,12 +6,38 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnSelectCloud: Button
+
+    // Upload a bill photo and let OCR try to fill the A–H fields first;
+    // the review screen still offers manual entry if it can't read the bill.
+    private val uploadScanLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri == null) return@registerForActivityResult
+            lifecycleScope.launch {
+                val path = withContext(Dispatchers.IO) {
+                    BillRepository.copyToCache(this@MainActivity, uri)
+                }
+                if (path == null) {
+                    Toast.makeText(
+                        this@MainActivity, R.string.photo_load_failed, Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    startActivity(
+                        Intent(this@MainActivity, ProcessingActivity::class.java)
+                            .putExtra(ProcessingActivity.EXTRA_PHOTO_PATH, path)
+                    )
+                }
+            }
+        }
 
     private val signInLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -36,6 +62,10 @@ class MainActivity : AppCompatActivity() {
         btnSelectCloud = findViewById(R.id.btn_select_cloud)
         btnSelectCloud.setOnClickListener {
             signInLauncher.launch(SessionManager.buildSignInClient(this).signInIntent)
+        }
+
+        findViewById<Button>(R.id.btn_upload_scan).setOnClickListener {
+            uploadScanLauncher.launch("image/*")
         }
 
         findViewById<Button>(R.id.btn_start_capture).setOnClickListener {

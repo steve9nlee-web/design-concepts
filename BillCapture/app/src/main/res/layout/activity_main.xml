@@ -17,6 +17,16 @@
         android:layout_marginBottom="40dp" />
 
     <Button
+        android:id="@+id/btn_upload_scan"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="@string/upload_photo_auto_scan"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"
+        android:backgroundTint="#6a1fa8" />
+
+    <Button
         android:id="@+id/btn_select_cloud"
         android:layout_width="match_parent"
         android:layout_height="60dp"

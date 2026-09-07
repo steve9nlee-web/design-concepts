@@ -1,6 +1,7 @@
 package com.billcapture.app
 
 import android.content.Context
+import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.text.SimpleDateFormat
@@ -38,6 +39,19 @@ object BillRepository {
     private fun photoName(entry: BillEntry): String {
         val id = entry.billNo.ifBlank { entry.capturedAt.ifBlank { "bill" } }
         return "bill_${id.replace(Regex("""[^A-Za-z0-9\-_]"""), "_")}.jpg"
+    }
+
+    /**
+     * Copies a picked gallery photo into the app cache so EXIF reading, OCR
+     * and Drive upload all work on a plain file. Returns null on failure.
+     */
+    fun copyToCache(context: Context, uri: Uri): String? = try {
+        val target = File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            target.outputStream().use { input.copyTo(it) }
+        }?.let { target.absolutePath }
+    } catch (_: Exception) {
+        null
     }
 
     /**

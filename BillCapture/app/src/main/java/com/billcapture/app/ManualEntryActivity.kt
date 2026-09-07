@@ -87,19 +87,10 @@ class ManualEntryActivity : AppCompatActivity() {
         intent.getStringExtra(EXTRA_PHOTO_PATH)?.let { usePhoto(it) }
     }
 
-    /** Copies a picked gallery photo into the cache so EXIF and upload work. */
     private fun importPhoto(uri: Uri) {
         lifecycleScope.launch {
             val copied = withContext(Dispatchers.IO) {
-                try {
-                    val target = File(cacheDir, "manual_${System.currentTimeMillis()}.jpg")
-                    contentResolver.openInputStream(uri)?.use { input ->
-                        target.outputStream().use { input.copyTo(it) }
-                    } ?: return@withContext null
-                    target.absolutePath
-                } catch (_: Exception) {
-                    null
-                }
+                BillRepository.copyToCache(this@ManualEntryActivity, uri)
             }
             if (copied == null) {
                 Toast.makeText(
