@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="badge_urgent_bg">#FFE0DD</color>
+    <color name="badge_urgent_text">#B3261E</color>
+    <color name="badge_not_so_urgent_bg">#FFF3D6</color>
+    <color name="badge_not_so_urgent_text">#8A6D00</color>
+    <color name="badge_wip_bg">#DDE8FF</color>
+    <color name="badge_wip_text">#1A56B0</color>
+</resources>
