@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Very light brown (cream) palette -->
+    <color name="app_background">#FAF4EA</color>
+    <color name="top_bar">#F1E6D6</color>
+    <color name="brown_primary">#7B5E48</color>
+    <color name="brown_text_dark">#3E2E23</color>
+
     <color name="badge_urgent_bg">#FFE0DD</color>
     <color name="badge_urgent_text">#B3261E</color>
     <color name="badge_not_so_urgent_bg">#FFF3D6</color>

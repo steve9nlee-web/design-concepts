@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.IdeaCapture" parent="Theme.Material3.DayNight">
-        <item name="colorPrimary">#5B47C2</item>
+    <style name="Theme.IdeaCapture" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/brown_primary</item>
         <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/top_bar</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

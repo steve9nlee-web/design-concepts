@@ -45,6 +45,8 @@ class AddEditIdeaActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_edit)
+        setSupportActionBar(findViewById(R.id.toolbar))
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         store = IdeaStore(this)
         ideaInput = findViewById(R.id.ideaInput)
@@ -73,6 +75,11 @@ class AddEditIdeaActivity : AppCompatActivity() {
             setTitle(R.string.new_idea_title)
             checkStatusChip(IdeaStatus.NOT_SO_URGENT)
         }
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        finish()
+        return true
     }
 
     private fun checkStatusChip(status: IdeaStatus) {
