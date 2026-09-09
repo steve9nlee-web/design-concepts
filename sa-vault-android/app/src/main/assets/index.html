@@ -404,9 +404,20 @@ if (window.AndroidVoice) {
   var setupScreen = $("setupScreen"), loginScreen = $("loginScreen"), vaultScreen = $("vaultScreen");
   var lockTag = $("lockTag"), rowsEl = $("rows"), toastEl = $("toast");
 
-  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function removeKey(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  // Prefer the Android app's permanent storage bridge when present;
+  // fall back to browser localStorage on the web.
+  function store(k, v) {
+    try { if (window.AndroidStore) { window.AndroidStore.setItem(k, v); return; } } catch (e) {}
+    try { localStorage.setItem(k, v); } catch (e) {}
+  }
+  function load(k) {
+    try { if (window.AndroidStore) { return window.AndroidStore.getItem(k); } } catch (e) {}
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  }
+  function removeKey(k) {
+    try { if (window.AndroidStore) { window.AndroidStore.removeItem(k); return; } } catch (e) {}
+    try { localStorage.removeItem(k); } catch (e) {}
+  }
 
   function normalize(s) {
     return (s || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
@@ -492,6 +503,11 @@ if (window.AndroidVoice) {
     }
     hash(norm).then(function (h) {
       store(KEY_PASS, h);
+      if (load(KEY_PASS) !== h) {
+        statusEl.textContent = "Couldn't save on this device — your browser is blocking storage (private window?).";
+        statusEl.className = "status bad";
+        return;
+      }
       toast("Passphrase saved");
       enterVault();
     });

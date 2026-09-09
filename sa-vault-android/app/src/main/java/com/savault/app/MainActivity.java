@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         web.setWebChromeClient(new WebChromeClient());
         web.addJavascriptInterface(new VoiceBridge(), "AndroidVoice");
+        web.addJavascriptInterface(new StoreBridge(), "AndroidStore");
         setContentView(web);
 
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
@@ -119,6 +120,29 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void start(final String lang) {
             main.post(() -> startListening(lang));
+        }
+    }
+
+    // Durable key-value storage for the web app: WebView localStorage on
+    // file:// URLs does not reliably survive app restarts, SharedPreferences does.
+    private class StoreBridge {
+        private android.content.SharedPreferences prefs() {
+            return getSharedPreferences("savault", MODE_PRIVATE);
+        }
+
+        @JavascriptInterface
+        public String getItem(String key) {
+            return prefs().getString(key, null);
+        }
+
+        @JavascriptInterface
+        public void setItem(String key, String value) {
+            prefs().edit().putString(key, value).commit();
+        }
+
+        @JavascriptInterface
+        public void removeItem(String key) {
+            prefs().edit().remove(key).commit();
         }
     }
 }
