@@ -142,24 +142,125 @@ function addRecord(cat, obj){
   saveDB();
   toast(CATS[cat].label.slice(0,-1)+" saved");
   autoExportIfOn();
+  pushRecord(cat, obj);
   render();
 }
 function updateRecord(cat, id, obj){
   const r = db[cat].find(x=>x.id===id);
   if(!r) return;
   Object.assign(r, obj);
-  r.updated = nowStamp();
+  r.timestamp = nowStamp();
   saveDB();
   toast(CATS[cat].label.slice(0,-1)+" updated");
   autoExportIfOn();
+  pushRecord(cat, r);
   render();
 }
 function deleteRecord(cat,id){
   if(!PERM.canDelete) return;
+  const rec = db[cat].find(r=>r.id===id);
   db[cat] = db[cat].filter(r=>r.id!==id);
   saveDB(); render();
   toast("Deleted");
+  if(rec){ rec.deleted = "yes"; rec.timestamp = nowStamp(); pushRecord(cat, rec); }
 }
+
+/* ---------- Live sync via n8n webhooks (optional) ----------
+   Pull: GET  <url>/happyrepair-data  → replaces local data (server wins)
+   Push: POST <url>/happyrepair-save  → upserts one record by ID
+   Offline saves queue in an outbox and send on the next sync. */
+const SYNC_KEY_LS = "happyRepairSync_v1";
+const OUTBOX_LS = "happyRepairOutbox_v1";
+function syncCfg(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY_LS)) || {}; }catch(e){ return {}; } }
+function saveSyncCfg(c){ localStorage.setItem(SYNC_KEY_LS, JSON.stringify(c)); }
+function outbox(){ try{ return JSON.parse(localStorage.getItem(OUTBOX_LS)) || []; }catch(e){ return []; } }
+function saveOutbox(q){ localStorage.setItem(OUTBOX_LS, JSON.stringify(q)); }
+function syncConfigured(){ const c = syncCfg(); return !!(c.url && c.key); }
+function syncBase(){ return (syncCfg().url||"").replace(/\/+$/,""); }
+
+let lastSyncAt = null, syncBusy = false;
+function setSyncStatus(){
+  const el = document.getElementById("syncStatus");
+  if(!el) return;
+  const n = outbox().length;
+  if(!syncConfigured()) el.textContent = "⚪ live sync not set up";
+  else if(n > 0) el.textContent = "🔴 offline — "+n+" change(s) queued";
+  else if(lastSyncAt) el.textContent = "🟢 live · synced "+lastSyncAt;
+  else el.textContent = "🟡 live sync on — not synced yet";
+}
+
+function recordPayload(cat, r){
+  const o = { id: r.id, timestamp: r.timestamp, deleted: r.deleted || "" };
+  CATS[cat].fields.forEach(f=> o[f] = r[f] ?? "");
+  return { cat, record: o };
+}
+async function postSave(payload){
+  const r = await fetch(syncBase()+"/happyrepair-save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-happy-key": syncCfg().key },
+    body: JSON.stringify(payload),
+  });
+  if(!r.ok) throw new Error("save "+r.status);
+}
+function pushRecord(cat, rec){
+  if(!syncConfigured()) return;
+  const payload = recordPayload(cat, rec);
+  postSave(payload).then(()=>{ lastSyncAt = nowStamp().slice(11,16); setSyncStatus(); })
+    .catch(()=>{ const q = outbox(); q.push(payload); saveOutbox(q); setSyncStatus(); });
+}
+async function flushOutbox(){
+  let q = outbox();
+  while(q.length){
+    try{ await postSave(q[0]); q.shift(); saveOutbox(q); }
+    catch(e){ break; }
+  }
+  return outbox().length === 0;
+}
+async function syncPull(){
+  const r = await fetch(syncBase()+"/happyrepair-data", { headers: { "x-happy-key": syncCfg().key } });
+  if(!r.ok) throw new Error("pull "+r.status);
+  const data = await r.json();
+  let touched = false;
+  Object.keys(CATS).forEach(cat=>{
+    if(!Array.isArray(data[cat])) return;
+    db[cat] = data[cat].filter(row=>String(row.deleted||"")!=="yes").map(row=>{
+      const o = { id: String(row.ID), timestamp: String(row["Date/Time"]||"") };
+      CATS[cat].fields.forEach(f=> o[f] = row[f] == null ? "" : String(row[f]));
+      return o;
+    });
+    touched = true;
+  });
+  if(touched) saveDB();
+  return touched;
+}
+async function syncNow(manual){
+  if(!syncConfigured()){
+    if(manual){ toast("Set the sync server URL and key first"); nav(PERM.canSettings ? "settings" : "sync"); }
+    return;
+  }
+  if(syncBusy) return;
+  syncBusy = true;
+  try{
+    const flushed = await flushOutbox();
+    if(flushed){
+      await syncPull();
+      lastSyncAt = nowStamp().slice(11,16);
+      if(manual) toast("Synced");
+      /* don't yank the UI out from under an open form */
+      if(!document.getElementById("modalbg").classList.contains("open")) render();
+      else setSyncStatus();
+    } else if(manual){
+      toast("Offline — changes queued, will retry");
+      setSyncStatus();
+    }
+  }catch(e){
+    if(manual) toast("Sync failed — check URL/key and n8n");
+    setSyncStatus();
+  }finally{
+    syncBusy = false;
+  }
+}
+setInterval(()=>{ const c = syncCfg(); if(syncConfigured() && c.auto !== false) syncNow(false); }, 60000);
 function autoExportIfOn(){
   const el = document.getElementById("autoExport");
   if(el && el.checked) exportExcel(true);
@@ -262,8 +363,9 @@ function render(){
   renderSidebar();
   const main = document.getElementById("main");
   main.innerHTML = "";
-  if(currentView==="dashboard") return renderDashboard(main);
+  if(currentView==="dashboard"){ renderDashboard(main); setSyncStatus(); return; }
   if(currentView==="settings" && PERM.canSettings) return renderSettings(main);
+  if(currentView==="sync") return renderSyncSettings(main);
   if(!PERM.cats.includes(currentView)){ currentView="dashboard"; return renderDashboard(main); }
   renderCategory(main, currentView);
 }
@@ -280,7 +382,9 @@ function renderSidebar(){
     ${items.map(([k,i,l])=>`<div class="navitem ${currentView===k?'active':''}" onclick="nav('${k}')">${i} ${l}</div>`).join("")}
     ${PERM.canSettings ? `
     <div class="navlabel">Admin</div>
-    <div class="navitem ${currentView==='settings'?'active':''}" onclick="nav('settings')">⚙️ Settings</div>` : ``}
+    <div class="navitem ${currentView==='settings'?'active':''}" onclick="nav('settings')">⚙️ Settings</div>` : `
+    <div class="navlabel">Setup</div>
+    <div class="navitem ${currentView==='sync'?'active':''}" onclick="nav('sync')">🔄 Sync settings</div>`}
   `;
 }
 
@@ -292,6 +396,10 @@ function renderDashboard(main){
       ${Object.entries(CATS).filter(([k])=>PERM.cats.includes(k)).map(([k,v])=>`
         <div class="card"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div></div>
       `).join("")}
+    </div>
+    <div class="exportbar">
+      <button class="btn-outline" onclick="syncNow(true)">🔄 Sync now</button>
+      <span class="switch" id="syncStatus"></span>
     </div>
     <div class="exportbar">
       ${PERM.canExport ? `
@@ -339,7 +447,37 @@ function renderSettings(main){
       </div>
       <button class="btn-dark" onclick="saveSettings()">Save</button>
     </div>
+    ${syncCard()}
   `;
+}
+function syncCard(){
+  const c = syncCfg();
+  return `
+    <div class="card" style="max-width:520px;margin-top:16px">
+      <h3 style="margin-top:0">🔄 Live sync (n8n)</h3>
+      <p class="sub" style="margin-top:0">Both apps sync through your n8n server so everyone sees the same data. Leave blank to work offline-only.</p>
+      <div class="field"><label>Sync server URL</label><input id="sy_url" value="${c.url||''}" placeholder="https://n8n.srv978288.hstgr.cloud/webhook"></div>
+      <div class="field"><label>Sync key</label><input id="sy_key" value="${c.key||''}" placeholder="the key set in the n8n workflow"></div>
+      <label class="switch" style="margin-bottom:10px"><input type="checkbox" id="sy_auto" ${c.auto!==false?'checked':''}> Auto-sync every minute</label>
+      <div><button class="btn-dark" onclick="saveSyncSettings()">Save sync settings</button></div>
+    </div>
+  `;
+}
+function renderSyncSettings(main){
+  main.innerHTML = `
+    <h1>Sync settings</h1>
+    <p class="sub">Enter the same server URL and key as the admin app.</p>
+    ${syncCard()}
+  `;
+}
+function saveSyncSettings(){
+  saveSyncCfg({
+    url: val('sy_url').trim(),
+    key: val('sy_key').trim(),
+    auto: document.getElementById('sy_auto').checked,
+  });
+  toast("Sync settings saved");
+  syncNow(true);
 }
 function saveSettings(){
   db.shop = {
@@ -438,6 +576,7 @@ function submitForm(cat, editId){
 
 /* ---------- init ---------- */
 render();
+if(syncConfigured()) syncNow(false);
 </script>
 </body>
 </html>

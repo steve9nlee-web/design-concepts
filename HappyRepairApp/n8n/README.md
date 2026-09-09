@@ -1,4 +1,37 @@
-# HappyRepair — Google Drive + n8n flow
+# HappyRepair — Google Drive + n8n flows
+
+## Live sync (`happyrepair-live-api.json`) — both tablets share one database
+
+This second workflow turns n8n into a tiny live API so the Admin and
+Mechanic apps read and write the **same data** (stored in the HappyRepair
+Master Google Sheet). The apps sync on open, after every save, every
+minute, and via the **🔄 Sync now** button; offline changes queue in an
+outbox and send when back online. Deletes are synced as a `deleted=yes`
+flag, so the Master sheet keeps full history.
+
+Endpoints it creates (used by the apps automatically):
+- `GET  <n8n>/webhook/happyrepair-data` — returns all 7 categories as JSON
+- `POST <n8n>/webhook/happyrepair-save` — upserts one record by ID
+- Both require an `x-happy-key` header matching the key in the workflow.
+
+### Setup
+1. **Master sheet**: add one more header cell named `deleted` at the end
+   of row 1 on **each of the 7 tabs** (e.g. Customers → G1 = `deleted`).
+2. Import `happyrepair-live-api.json` into n8n (paste on canvas works).
+3. Pick a secret key (any long random string). In **both** Auth nodes,
+   replace `CHANGE_ME_SYNC_KEY` with it.
+4. Attach your **Google Sheets** credential to the 7 Read nodes and the
+   Upsert node. **Activate** the workflow.
+5. In each app: **Settings** (Admin) or **🔄 Sync settings** (Mechanic) →
+   Sync server URL = `https://<your-n8n>/webhook`, Sync key = your key →
+   Save. The app syncs immediately and shows 🟢 on the Dashboard.
+
+Notes: both apps use one shared key (no per-role enforcement on the
+server); last write wins if two people edit the same record at the same
+moment; the webhook URL + key together are the door to your data, so keep
+the key private and use a long random value.
+
+## Drive export flow (`happyrepair-drive-flow.json`) — backup + alerts
 
 `happyrepair-drive-flow.json` is an importable n8n workflow that turns the
 app's Excel export into automation:
