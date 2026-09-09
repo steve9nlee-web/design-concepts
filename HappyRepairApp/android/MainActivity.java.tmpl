@@ -37,6 +37,10 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setAllowFileAccess(true);
+        // The app page loads from file:// — without these, some WebView
+        // versions block its fetch() calls to the sync server with CORS.
+        s.setAllowFileAccessFromFileURLs(true);
+        s.setAllowUniversalAccessFromFileURLs(true);
         webView.setWebViewClient(new WebViewClient());
         // Base WebChromeClient enables the standard confirm()/alert() dialogs
         webView.setWebChromeClient(new WebChromeClient());
