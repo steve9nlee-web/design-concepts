@@ -2,6 +2,7 @@ package __PKG__;
 
 import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -9,34 +10,90 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 public class MainActivity extends Activity {
 
+    private static final int PICK_XLSX = 42;
+    private static final String XLSX_MIME =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    private WebView webView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WebView wv = new WebView(this);
-        WebSettings s = wv.getSettings();
+        webView = new WebView(this);
+        WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setAllowFileAccess(true);
-        wv.setWebViewClient(new WebViewClient());
-        wv.addJavascriptInterface(new Bridge(this), "AndroidBridge");
-        wv.loadUrl("file:///android_asset/index.html");
-        setContentView(wv);
+        webView.setWebViewClient(new WebViewClient());
+        // Base WebChromeClient enables the standard confirm()/alert() dialogs
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.addJavascriptInterface(new Bridge(this), "AndroidBridge");
+        webView.loadUrl("file:///android_asset/index.html");
+        setContentView(webView);
     }
 
-    static class Bridge {
-        private final Activity activity;
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_XLSX || resultCode != RESULT_OK
+                || data == null || data.getData() == null) {
+            return;
+        }
+        try (InputStream in = getContentResolver().openInputStream(data.getData())) {
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int n;
+            while ((n = in.read(chunk)) > 0) buf.write(chunk, 0, n);
+            String b64 = Base64.encodeToString(buf.toByteArray(), Base64.NO_WRAP);
+            webView.evaluateJavascript(
+                "window.onExcelImport && window.onExcelImport('" + b64 + "')", null);
+        } catch (Exception e) {
+            webView.evaluateJavascript(
+                "window.onExcelImportError && window.onExcelImportError()", null);
+        }
+    }
 
-        Bridge(Activity activity) {
+    // Saves into Downloads; returns a shareable content Uri on API 29+, null below.
+    private Uri saveToDownloads(String filename, byte[] data) throws Exception {
+        if (Build.VERSION.SDK_INT >= 29) {
+            ContentValues v = new ContentValues();
+            v.put(MediaStore.Downloads.DISPLAY_NAME, filename);
+            v.put(MediaStore.Downloads.MIME_TYPE, XLSX_MIME);
+            Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+            if (uri == null) throw new Exception("MediaStore insert failed");
+            try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                os.write(data);
+            }
+            return uri;
+        }
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        if (!dir.exists()) dir.mkdirs();
+        try (FileOutputStream fos = new FileOutputStream(new File(dir, filename))) {
+            fos.write(data);
+        }
+        return null;
+    }
+
+    // Keep this a *static* nested class: javac 21 emits a null-named
+    // synthetic-parameter attribute for inner-class constructors that
+    // build-tools 34's d8 crashes on.
+    static class Bridge {
+        private final MainActivity activity;
+
+        Bridge(MainActivity activity) {
             this.activity = activity;
         }
 
@@ -44,28 +101,44 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean saveBase64(String filename, String base64) {
             try {
-                byte[] data = Base64.decode(base64, Base64.DEFAULT);
-                if (Build.VERSION.SDK_INT >= 29) {
-                    ContentValues v = new ContentValues();
-                    v.put(MediaStore.Downloads.DISPLAY_NAME, filename);
-                    v.put(MediaStore.Downloads.MIME_TYPE,
-                          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-                    Uri uri = activity.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
-                    if (uri == null) return false;
-                    try (OutputStream os = activity.getContentResolver().openOutputStream(uri)) {
-                        os.write(data);
-                    }
-                } else {
-                    File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    if (!dir.exists()) dir.mkdirs();
-                    try (FileOutputStream fos = new FileOutputStream(new File(dir, filename))) {
-                        fos.write(data);
-                    }
-                }
+                activity.saveToDownloads(filename, Base64.decode(base64, Base64.DEFAULT));
                 return true;
             } catch (Exception e) {
                 return false;
             }
+        }
+
+        // Saves to Downloads, then opens the Android share sheet so the user
+        // can send the file to Google Drive, WhatsApp, email, etc.
+        @JavascriptInterface
+        public boolean shareBase64(String filename, String base64) {
+            try {
+                Uri uri = activity.saveToDownloads(filename, Base64.decode(base64, Base64.DEFAULT));
+                if (uri == null) return true; // pre-Android-10: saved, no share sheet
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType(XLSX_MIME);
+                send.putExtra(Intent.EXTRA_STREAM, uri);
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Intent chooser = Intent.createChooser(send, "Share " + filename);
+                activity.startActivity(chooser);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        // Opens the system file picker (Google Drive shows up as a location);
+        // the picked file comes back through onActivityResult → onExcelImport.
+        @JavascriptInterface
+        public void importExcel() {
+            activity.runOnUiThread(() -> {
+                Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("*/*");
+                i.putExtra(Intent.EXTRA_MIME_TYPES,
+                    new String[]{XLSX_MIME, "application/vnd.ms-excel"});
+                activity.startActivityForResult(i, PICK_XLSX);
+            });
         }
     }
 }

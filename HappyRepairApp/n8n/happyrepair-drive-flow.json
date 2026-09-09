@@ -1,0 +1,286 @@
+{
+  "name": "HappyRepair — Drive sync & alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "triggerOn": "specificFolder",
+        "folderToWatch": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_DRIVE_FOLDER_ID" },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000001",
+      "name": "Watch folder (new file)",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [-660, 180]
+    },
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "triggerOn": "specificFolder",
+        "folderToWatch": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_DRIVE_FOLDER_ID" },
+        "event": "fileUpdated",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000002",
+      "name": "Watch folder (updated file)",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [-660, 420]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": { "__rl": true, "mode": "id", "value": "={{ $json.id }}" },
+        "options": {}
+      },
+      "id": "b2000000-0000-0000-0000-000000000001",
+      "name": "Download workbook",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-420, 300]
+    },
+
+    {
+      "parameters": { "operation": "xlsx", "options": { "sheetName": "Customers" } },
+      "id": "c3000000-0000-0000-0000-000000000001",
+      "name": "Extract Customers",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-140, -120]
+    },
+    {
+      "parameters": { "operation": "xlsx", "options": { "sheetName": "Vehicles" } },
+      "id": "c3000000-0000-0000-0000-000000000002",
+      "name": "Extract Vehicles",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-140, 20]
+    },
+    {
+      "parameters": { "operation": "xlsx", "options": { "sheetName": "Quotations" } },
+      "id": "c3000000-0000-0000-0000-000000000003",
+      "name": "Extract Quotations",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-140, 160]
+    },
+    {
+      "parameters": { "operation": "xlsx", "options": { "sheetName": "Job Orders" } },
+      "id": "c3000000-0000-0000-0000-000000000004",
+      "name": "Extract Job Orders",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-140, 300]
+    },
+    {
+      "parameters": { "operation": "xlsx", "options": { "sheetName": "Invoices" } },
+      "id": "c3000000-0000-0000-0000-000000000005",
+      "name": "Extract Invoices",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-140, 440]
+    },
+    {
+      "parameters": { "operation": "xlsx", "options": { "sheetName": "Inventory" } },
+      "id": "c3000000-0000-0000-0000-000000000006",
+      "name": "Extract Inventory",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-140, 580]
+    },
+    {
+      "parameters": { "operation": "xlsx", "options": { "sheetName": "Reminders" } },
+      "id": "c3000000-0000-0000-0000-000000000007",
+      "name": "Extract Reminders",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-140, 720]
+    },
+
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_MASTER_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Customers" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "d4000000-0000-0000-0000-000000000001",
+      "name": "Sync Customers",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [140, -120]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_MASTER_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Vehicles" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "d4000000-0000-0000-0000-000000000002",
+      "name": "Sync Vehicles",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [140, 20]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_MASTER_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Quotations" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "d4000000-0000-0000-0000-000000000003",
+      "name": "Sync Quotations",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [140, 160]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_MASTER_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Job Orders" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "d4000000-0000-0000-0000-000000000004",
+      "name": "Sync Job Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [140, 300]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_MASTER_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Invoices" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "d4000000-0000-0000-0000-000000000005",
+      "name": "Sync Invoices",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [140, 440]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_MASTER_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Inventory" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "d4000000-0000-0000-0000-000000000006",
+      "name": "Sync Inventory",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [140, 580]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "REPLACE_WITH_MASTER_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Reminders" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "d4000000-0000-0000-0000-000000000007",
+      "name": "Sync Reminders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [140, 720]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const low = $input.all().filter(i => i.json.name && Number(i.json.qty || 0) <= Number(i.json.reorderLevel || 0));\nif (!low.length) return [];\nconst lines = low.map(i => `- ${i.json.name} (SKU ${i.json.sku || '-'}): ${i.json.qty} ${i.json.unit || ''} left, reorder at ${i.json.reorderLevel}`);\nreturn [{ json: { count: low.length, body: lines.join('\\n') } }];"
+      },
+      "id": "e5000000-0000-0000-0000-000000000001",
+      "name": "Find low stock",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 580]
+    },
+    {
+      "parameters": {
+        "sendTo": "REPLACE_WITH_YOUR_EMAIL",
+        "subject": "=Low stock alert: {{ $json.count }} item(s) need reordering",
+        "emailType": "text",
+        "message": "=These inventory items are at or below their reorder level:\n\n{{ $json.body }}\n\n(From the latest HappyRepairApp export on Google Drive)",
+        "options": {}
+      },
+      "id": "f6000000-0000-0000-0000-000000000001",
+      "name": "Email low-stock alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [680, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "const soon = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);\nconst due = $input.all().filter(i => {\n  if (!i.json.customer) return false;\n  const d = new Date(i.json.dueDate);\n  return !isNaN(d.getTime()) && d <= soon;\n});\nif (!due.length) return [];\nconst lines = due.map(i => `- ${i.json.customer} (${i.json.plate || '-'}, ${i.json.phone || 'no phone'}): service due ${i.json.dueDate}`);\nreturn [{ json: { count: due.length, body: lines.join('\\n') } }];"
+      },
+      "id": "e5000000-0000-0000-0000-000000000002",
+      "name": "Find services due soon",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 720]
+    },
+    {
+      "parameters": {
+        "sendTo": "REPLACE_WITH_YOUR_EMAIL",
+        "subject": "=Service reminders: {{ $json.count }} customer(s) due within 7 days",
+        "emailType": "text",
+        "message": "=These customers are due for service in the next 7 days:\n\n{{ $json.body }}\n\n(From the latest HappyRepairApp export on Google Drive)",
+        "options": {}
+      },
+      "id": "f6000000-0000-0000-0000-000000000002",
+      "name": "Email service reminders",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [680, 720]
+    }
+  ],
+  "connections": {
+    "Watch folder (new file)": {
+      "main": [[{ "node": "Download workbook", "type": "main", "index": 0 }]]
+    },
+    "Watch folder (updated file)": {
+      "main": [[{ "node": "Download workbook", "type": "main", "index": 0 }]]
+    },
+    "Download workbook": {
+      "main": [[
+        { "node": "Extract Customers", "type": "main", "index": 0 },
+        { "node": "Extract Vehicles", "type": "main", "index": 0 },
+        { "node": "Extract Quotations", "type": "main", "index": 0 },
+        { "node": "Extract Job Orders", "type": "main", "index": 0 },
+        { "node": "Extract Invoices", "type": "main", "index": 0 },
+        { "node": "Extract Inventory", "type": "main", "index": 0 },
+        { "node": "Extract Reminders", "type": "main", "index": 0 }
+      ]]
+    },
+    "Extract Customers": { "main": [[{ "node": "Sync Customers", "type": "main", "index": 0 }]] },
+    "Extract Vehicles": { "main": [[{ "node": "Sync Vehicles", "type": "main", "index": 0 }]] },
+    "Extract Quotations": { "main": [[{ "node": "Sync Quotations", "type": "main", "index": 0 }]] },
+    "Extract Job Orders": { "main": [[{ "node": "Sync Job Orders", "type": "main", "index": 0 }]] },
+    "Extract Invoices": { "main": [[{ "node": "Sync Invoices", "type": "main", "index": 0 }]] },
+    "Extract Inventory": { "main": [[
+      { "node": "Sync Inventory", "type": "main", "index": 0 },
+      { "node": "Find low stock", "type": "main", "index": 0 }
+    ]] },
+    "Extract Reminders": { "main": [[
+      { "node": "Sync Reminders", "type": "main", "index": 0 },
+      { "node": "Find services due soon", "type": "main", "index": 0 }
+    ]] },
+    "Find low stock": { "main": [[{ "node": "Email low-stock alert", "type": "main", "index": 0 }]] },
+    "Find services due soon": { "main": [[{ "node": "Email service reminders", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

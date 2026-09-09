@@ -93,13 +93,13 @@ const ROLES = {
     label: "Admin",
     cats: ["customers","vehicles","quotations","jobOrders","invoices","inventory","reminders"],
     readOnly: [],
-    canDelete: true, canExport: true, canSettings: true,
+    canDelete: true, canExport: true, canSettings: true, canImport: true,
   },
   mechanic: {
     label: "Mechanic",
     cats: ["jobOrders","vehicles","inventory","reminders"],
     readOnly: ["inventory","reminders"],
-    canDelete: false, canExport: false, canSettings: false,
+    canDelete: false, canExport: false, canSettings: false, canImport: true,
   },
 };
 const PERM = ROLES[ROLE] || ROLES.admin;
@@ -166,8 +166,7 @@ function autoExportIfOn(){
 }
 
 /* ---------- Excel export: one sheet per category, rows timestamped ---------- */
-function exportExcel(silent){
-  if(!PERM.canExport) return;
+function buildWorkbook(){
   const wb = XLSX.utils.book_new();
   Object.keys(CATS).forEach(cat=>{
     const rows = db[cat].map(r=>{
@@ -178,6 +177,11 @@ function exportExcel(silent){
     const ws = XLSX.utils.json_to_sheet(rows.length?rows:[{"Date/Time":"","ID":""}]);
     XLSX.utils.book_append_sheet(wb, ws, CATS[cat].label.slice(0,31));
   });
+  return wb;
+}
+function exportExcel(silent){
+  if(!PERM.canExport) return;
+  const wb = buildWorkbook();
   if(window.AndroidBridge && AndroidBridge.saveBase64){
     /* Native Android bridge: write straight into the Downloads folder */
     const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
@@ -188,6 +192,51 @@ function exportExcel(silent){
     if(!silent) toast("Excel exported");
   }
 }
+/* Share the fresh .xlsx via the Android share sheet (pick Google Drive there) */
+function shareExcel(){
+  if(!PERM.canExport) return;
+  const wb = buildWorkbook();
+  if(window.AndroidBridge && AndroidBridge.shareBase64){
+    const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
+    const ok = AndroidBridge.shareBase64("HappyRepairApp_data.xlsx", b64);
+    toast(ok ? "Pick Google Drive in the share menu" : "Could not share file");
+  } else {
+    XLSX.writeFile(wb, "HappyRepairApp_data.xlsx");
+    toast("Excel exported — upload it to Drive manually");
+  }
+}
+/* ---------- Excel import (e.g. the file the admin put on Google Drive) ---------- */
+function importExcel(){
+  if(!PERM.canImport) return;
+  if(window.AndroidBridge && AndroidBridge.importExcel) AndroidBridge.importExcel();
+  else toast("Import needs the Android app");
+}
+window.onExcelImport = function(b64){
+  try{
+    const wb = XLSX.read(b64, {type:"base64"});
+    const next = {};
+    let total = 0;
+    Object.keys(CATS).forEach(cat=>{
+      const ws = wb.Sheets[CATS[cat].label.slice(0,31)];
+      if(!ws) return;
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+      next[cat] = rows.filter(r=>r["ID"]).map(r=>{
+        const o = {id:String(r["ID"]), timestamp:String(r["Date/Time"]||nowStamp())};
+        CATS[cat].fields.forEach(f=> o[f] = r[f]!==undefined ? String(r[f]) : "");
+        return o;
+      });
+      total += next[cat].length;
+    });
+    if(total===0){ toast("No HappyRepair records found in that file"); return; }
+    if(!confirm("Replace the data on this device with "+total+" record(s) from the file?")) return;
+    Object.keys(next).forEach(cat=> db[cat]=next[cat]);
+    saveDB(); render();
+    toast("Imported "+total+" record(s)");
+  }catch(e){
+    toast("Could not read that Excel file");
+  }
+};
+window.onExcelImportError = function(){ toast("Could not open that file"); };
 
 /* ---------- Toast ---------- */
 function toast(msg){
@@ -244,11 +293,15 @@ function renderDashboard(main){
         <div class="card"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div></div>
       `).join("")}
     </div>
-    ${PERM.canExport ? `
     <div class="exportbar">
-      <button class="btn-dark" onclick="exportExcel()">⬇ Export all data to Excel (.xlsx)</button>
-      <label class="switch"><input type="checkbox" id="autoExport"> Auto-export a fresh .xlsx after every save</label>
-    </div>` : ``}
+      ${PERM.canExport ? `
+      <button class="btn-dark" onclick="exportExcel()">⬇ Export to Excel (Downloads)</button>
+      <button class="btn-dark" onclick="shareExcel()">☁ Export &amp; share to Drive…</button>` : ``}
+      ${PERM.canImport ? `
+      <button class="btn-outline" onclick="importExcel()">⬆ Import from Excel file…</button>` : ``}
+      ${PERM.canExport ? `
+      <label class="switch"><input type="checkbox" id="autoExport"> Auto-export a fresh .xlsx after every save</label>` : ``}
+    </div>
     <div class="card">
       <h3 style="margin-top:0">Getting started</h3>
       ${ROLE==="mechanic" ? `
@@ -256,11 +309,13 @@ function renderDashboard(main){
         <li>Open <b>Job Orders</b> to see the jobs assigned to you — tap <b>Edit</b> to update a job's status as you work (In Progress → Ready for Pickup → Completed).</li>
         <li>Register vehicles you receive in <b>Vehicles</b>.</li>
         <li><b>Inventory</b> and <b>Reminders</b> are view-only — check part stock and upcoming service dates any time.</li>
+        <li>Tap <b>Import from Excel file</b> to load the latest data file the admin shared (e.g. from Google Drive).</li>
       </ol>` : `
       <ol style="color:#334155;line-height:1.8;font-size:14px">
         <li>Open <b>Settings</b> and fill in your shop name, address and tax %.</li>
         <li>Add customers in <b>Customers</b>, then attach their vehicles in <b>Vehicles</b>.</li>
         <li>Create quotations, convert to job orders, then generate invoices — every save is timestamped and can be exported to one Excel workbook with a sheet per category.</li>
+        <li>Tap <b>Export &amp; share to Drive</b> and pick Google Drive to upload the workbook — an n8n flow watching that folder can sync it to a master Google Sheet and send stock/reminder alerts.</li>
       </ol>`}
     </div>
   `;

@@ -19,9 +19,15 @@ Mechanic).
 - Everything: Dashboard, Customers, Vehicles, Quotations, Job Orders,
   Invoices, Inventory, Reminders, Settings.
 - Add, **edit**, and delete records.
-- **Export all data to Excel (.xlsx)** — written straight into the tablet's
+- **Export to Excel (.xlsx)** — written straight into the tablet's
   Downloads folder via a native Android bridge, one sheet per category,
   every row timestamped. Optional auto-export after every save.
+- **Export & share to Drive…** — same workbook, but opens the Android
+  share sheet so you can send it straight to Google Drive (or WhatsApp,
+  email…). Pairs with the n8n automation in `n8n/`.
+- **Import from Excel file…** — loads a HappyRepairApp .xlsx back in
+  (the system file picker includes Google Drive), replacing the on-device
+  data after a confirmation. Doubles as backup/restore.
 
 **Mechanic** (orange icon):
 - Dashboard, Job Orders, Vehicles, Inventory, Reminders only.
@@ -29,6 +35,8 @@ Mechanic).
   Progress → Ready for Pickup → Completed) and register Vehicles.
 - Inventory and Reminders are **view-only**.
 - No Customers/Quotations/Invoices/Settings, no delete, no Excel export.
+- **Import from Excel file…** — can load the admin's latest export
+  (e.g. from Google Drive) to get fresh data onto their tablet.
 
 ## Installing on a tablet
 1. Copy the `.apk` onto the device (USB, email, Drive, WhatsApp — any way).
@@ -38,6 +46,14 @@ Mechanic).
 3. Both are signed with a self-signed certificate (10-year validity), so
    Android shows "unknown developer" the first time — normal for apps
    installed outside the Play Store.
+
+## Google Drive + n8n automation
+See **`n8n/README.md`**. In short: Admin taps *Export & share to Drive*, an
+n8n workflow (`n8n/happyrepair-drive-flow.json`, importable) watches that
+Drive folder, syncs every category into a master Google Sheet (matched by
+ID, so re-uploads update rather than duplicate), and emails low-stock and
+service-due alerts. Mechanics pull fresh data with *Import from Excel
+file* → Google Drive.
 
 ## Important: data is per-app and per-device
 Each app stores its records in its **own** on-device storage (localStorage
