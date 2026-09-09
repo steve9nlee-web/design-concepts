@@ -1,4 +1,4 @@
-# Voice Vault (info-keeper)
+# SA Vault (info-keeper)
 
 A small single-file web app for saving personal reference info behind a
 voice-activated login.
