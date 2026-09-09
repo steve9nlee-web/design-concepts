@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HappyRepairApp — Workshop Manager</title>
+<meta name="theme-color" content="#0f172a">
+<script src="xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#0f172a; --navy2:#1e293b; --paper:#f7f8fa; --card:#ffffff;
+    --line:#e5e7eb; --muted:#64748b; --text:#0f172a; --accent:#2563eb;
+    --red:#dc2626; --amber:#d97706; --green:#16a34a;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--paper);color:var(--text);}
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:220px;background:var(--navy);color:#cbd5e1;flex-shrink:0;padding:18px 12px;}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;padding:6px 8px 20px;}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:#fff;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .navlabel{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;padding:14px 10px 6px;}
+  .navitem{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:14.5px;color:#cbd5e1;}
+  .navitem:hover{background:#1e293b;}
+  .navitem.active{background:#2563eb;color:#fff;}
+  .rolebadge{display:inline-block;margin-top:3px;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:#2563eb;color:#fff;}
+  .rolebadge.mechanic{background:#d97706;}
+  .main{flex:1;padding:22px 26px 60px;max-width:1100px;}
+  h1{font-size:26px;margin:2px 0 2px;}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:14px;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+  .stat{font-size:28px;font-weight:700;}
+  .stat-label{color:var(--muted);font-size:13px;}
+  input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;width:100%;}
+  textarea{min-height:60px;resize:vertical;}
+  label{font-size:12.5px;font-weight:600;color:#334155;display:block;margin-bottom:5px;}
+  .field{margin-bottom:12px;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  button{cursor:pointer;border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:600;font-family:inherit;}
+  .btn-dark{background:var(--navy);color:#fff;}
+  .btn-outline{background:#fff;border:1px solid var(--line);color:var(--text);}
+  .btn-danger{background:#fef2f2;color:var(--red);border:1px solid #fecaca;}
+  .btn-sm{padding:6px 10px;font-size:12.5px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;color:var(--muted);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--line);font-size:12.5px;}
+  td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#eef2ff;color:#3730a3;}
+  .pill.urgent{background:#fee2e2;color:#991b1b;}
+  .pill.low{background:#fee2e2;color:#991b1b;}
+  .pill.paid{background:#0f172a;color:#fff;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+  .search{flex:1;min-width:200px;}
+  .modalbg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:50;}
+  .modalbg.open{display:flex;}
+  .modal{background:#fff;border-radius:16px;padding:22px;max-width:640px;width:100%;}
+  .modal h2{margin-top:0;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+  .empty{color:var(--muted);font-size:14px;padding:20px 4px;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .chip{padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;cursor:pointer;background:#fff;}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;font-size:13.5px;z-index:99;opacity:0;transition:opacity .2s;}
+  .toast.show{opacity:1;}
+  .exportbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+  .switch{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+  .readonly-note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+  @media(max-width:760px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%;display:flex;overflow-x:auto;gap:4px;padding:10px;}
+    .brand{display:none;}
+    .navlabel{display:none;}
+    .navitem{white-space:nowrap;}
+    .main{padding:16px;}
+    .field-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main"></div>
+</div>
+<div class="modalbg" id="modalbg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- Role ---------- */
+const ROLE = "__ROLE__"; /* "admin" or "mechanic" — set at build time */
+const ROLES = {
+  admin: {
+    label: "Admin",
+    cats: ["customers","vehicles","quotations","jobOrders","invoices","inventory","reminders"],
+    readOnly: [],
+    canDelete: true, canExport: true, canSettings: true,
+  },
+  mechanic: {
+    label: "Mechanic",
+    cats: ["jobOrders","vehicles","inventory","reminders"],
+    readOnly: ["inventory","reminders"],
+    canDelete: false, canExport: false, canSettings: false,
+  },
+};
+const PERM = ROLES[ROLE] || ROLES.admin;
+function canWrite(cat){ return PERM.cats.includes(cat) && !PERM.readOnly.includes(cat); }
+
+/* ---------- Data layer ---------- */
+const CATS = {
+  customers:  {label:"Customers",  icon:"👤", fields:["name","phone","email","address"]},
+  vehicles:   {label:"Vehicles",   icon:"🚗", fields:["plate","make","model","year","color","customer"]},
+  quotations: {label:"Quotations", icon:"💲", fields:["quoteNo","customer","plate","status","validUntil","tax","notes","total"]},
+  jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","customer","plate","priority","status","mechanic","services","notes"]},
+  invoices:   {label:"Invoices",   icon:"🧾", fields:["invoiceNo","customer","plate","vehicle","amount","status"]},
+  inventory:  {label:"Inventory",  icon:"🔩", fields:["name","category","sku","qty","unit","cost","sell","reorderLevel"]},
+  reminders:  {label:"Reminders",  icon:"🔔", fields:["customer","phone","plate","dueDate","lastService","status"]},
+};
+const APP_KEY = "happyRepairApp_db_v1";
+
+function loadDB(){
+  try{ return JSON.parse(localStorage.getItem(APP_KEY)) || emptyDB(); }
+  catch(e){ return emptyDB(); }
+}
+function emptyDB(){
+  const db = {shop:{name:"HAPPY ENTERPRISE",address:"",phone:"",email:"",tax:0,currency:"MYR"}};
+  Object.keys(CATS).forEach(k=>db[k]=[]);
+  return db;
+}
+let db = loadDB();
+Object.keys(CATS).forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+function saveDB(){ localStorage.setItem(APP_KEY, JSON.stringify(db)); }
+
+function nowStamp(){
+  const d = new Date();
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function addRecord(cat, obj){
+  obj.id = cat.slice(0,2).toUpperCase()+"-"+Date.now();
+  obj.timestamp = nowStamp();
+  db[cat].push(obj);
+  saveDB();
+  toast(CATS[cat].label.slice(0,-1)+" saved");
+  autoExportIfOn();
+  render();
+}
+function updateRecord(cat, id, obj){
+  const r = db[cat].find(x=>x.id===id);
+  if(!r) return;
+  Object.assign(r, obj);
+  r.updated = nowStamp();
+  saveDB();
+  toast(CATS[cat].label.slice(0,-1)+" updated");
+  autoExportIfOn();
+  render();
+}
+function deleteRecord(cat,id){
+  if(!PERM.canDelete) return;
+  db[cat] = db[cat].filter(r=>r.id!==id);
+  saveDB(); render();
+  toast("Deleted");
+}
+function autoExportIfOn(){
+  const el = document.getElementById("autoExport");
+  if(el && el.checked) exportExcel(true);
+}
+
+/* ---------- Excel export: one sheet per category, rows timestamped ---------- */
+function exportExcel(silent){
+  if(!PERM.canExport) return;
+  const wb = XLSX.utils.book_new();
+  Object.keys(CATS).forEach(cat=>{
+    const rows = db[cat].map(r=>{
+      const o = {"Date/Time": r.timestamp, "ID": r.id};
+      CATS[cat].fields.forEach(f=> o[f] = r[f] ?? "");
+      return o;
+    });
+    const ws = XLSX.utils.json_to_sheet(rows.length?rows:[{"Date/Time":"","ID":""}]);
+    XLSX.utils.book_append_sheet(wb, ws, CATS[cat].label.slice(0,31));
+  });
+  if(window.AndroidBridge && AndroidBridge.saveBase64){
+    /* Native Android bridge: write straight into the Downloads folder */
+    const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
+    const ok = AndroidBridge.saveBase64("HappyRepairApp_data.xlsx", b64);
+    if(!silent) toast(ok ? "Excel saved to Downloads" : "Could not save file");
+  } else {
+    XLSX.writeFile(wb, "HappyRepairApp_data.xlsx");
+    if(!silent) toast("Excel exported");
+  }
+}
+
+/* ---------- Toast ---------- */
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove("show"),1600);
+}
+
+/* ---------- Modal ---------- */
+function openModal(html){
+  document.getElementById("modal").innerHTML = html;
+  document.getElementById("modalbg").classList.add("open");
+}
+function closeModal(){ document.getElementById("modalbg").classList.remove("open"); }
+document.getElementById("modalbg").addEventListener("click",e=>{ if(e.target.id==="modalbg") closeModal(); });
+
+/* ---------- Router / render ---------- */
+let currentView = "dashboard";
+function nav(view){ currentView = view; render(); }
+
+function render(){
+  renderSidebar();
+  const main = document.getElementById("main");
+  main.innerHTML = "";
+  if(currentView==="dashboard") return renderDashboard(main);
+  if(currentView==="settings" && PERM.canSettings) return renderSettings(main);
+  if(!PERM.cats.includes(currentView)){ currentView="dashboard"; return renderDashboard(main); }
+  renderCategory(main, currentView);
+}
+
+function renderSidebar(){
+  const items = [
+    ["dashboard","📊","Dashboard"],
+    ...Object.entries(CATS).filter(([k])=>PERM.cats.includes(k)).map(([k,v])=>[k,v.icon,v.label]),
+  ];
+  const sb = document.getElementById("sidebar");
+  sb.innerHTML = `
+    <div class="brand"><div class="logo">🔧</div><div>HappyRepairApp<br><span class="rolebadge ${ROLE}">${PERM.label}</span></div></div>
+    <div class="navlabel">Main</div>
+    ${items.map(([k,i,l])=>`<div class="navitem ${currentView===k?'active':''}" onclick="nav('${k}')">${i} ${l}</div>`).join("")}
+    ${PERM.canSettings ? `
+    <div class="navlabel">Admin</div>
+    <div class="navitem ${currentView==='settings'?'active':''}" onclick="nav('settings')">⚙️ Settings</div>` : ``}
+  `;
+}
+
+function renderDashboard(main){
+  main.innerHTML = `
+    <h1>Welcome, ${db.shop.name||"Owner"}</h1>
+    <p class="sub">Signed in as ${PERM.label} · data stored on this device</p>
+    <div class="grid4">
+      ${Object.entries(CATS).filter(([k])=>PERM.cats.includes(k)).map(([k,v])=>`
+        <div class="card"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div></div>
+      `).join("")}
+    </div>
+    ${PERM.canExport ? `
+    <div class="exportbar">
+      <button class="btn-dark" onclick="exportExcel()">⬇ Export all data to Excel (.xlsx)</button>
+      <label class="switch"><input type="checkbox" id="autoExport"> Auto-export a fresh .xlsx after every save</label>
+    </div>` : ``}
+    <div class="card">
+      <h3 style="margin-top:0">Getting started</h3>
+      ${ROLE==="mechanic" ? `
+      <ol style="color:#334155;line-height:1.8;font-size:14px">
+        <li>Open <b>Job Orders</b> to see the jobs assigned to you — tap <b>Edit</b> to update a job's status as you work (In Progress → Ready for Pickup → Completed).</li>
+        <li>Register vehicles you receive in <b>Vehicles</b>.</li>
+        <li><b>Inventory</b> and <b>Reminders</b> are view-only — check part stock and upcoming service dates any time.</li>
+      </ol>` : `
+      <ol style="color:#334155;line-height:1.8;font-size:14px">
+        <li>Open <b>Settings</b> and fill in your shop name, address and tax %.</li>
+        <li>Add customers in <b>Customers</b>, then attach their vehicles in <b>Vehicles</b>.</li>
+        <li>Create quotations, convert to job orders, then generate invoices — every save is timestamped and can be exported to one Excel workbook with a sheet per category.</li>
+      </ol>`}
+    </div>
+  `;
+}
+
+function renderSettings(main){
+  const s = db.shop;
+  main.innerHTML = `
+    <h1>Settings</h1>
+    <p class="sub">Configure your shop info.</p>
+    <div class="card" style="max-width:520px">
+      <div class="field"><label>Shop name</label><input id="s_name" value="${s.name||''}"></div>
+      <div class="field"><label>Address</label><textarea id="s_addr">${s.address||''}</textarea></div>
+      <div class="field-grid">
+        <div class="field"><label>Phone</label><input id="s_phone" value="${s.phone||''}"></div>
+        <div class="field"><label>Email</label><input id="s_email" value="${s.email||''}"></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Tax / GST %</label><input id="s_tax" type="number" value="${s.tax||0}"></div>
+        <div class="field"><label>Currency</label><input id="s_curr" value="${s.currency||'MYR'}"></div>
+      </div>
+      <button class="btn-dark" onclick="saveSettings()">Save</button>
+    </div>
+  `;
+}
+function saveSettings(){
+  db.shop = {
+    name:val('s_name'), address:val('s_addr'), phone:val('s_phone'),
+    email:val('s_email'), tax:val('s_tax'), currency:val('s_curr')
+  };
+  saveDB(); toast("Settings saved"); render();
+}
+function val(id){ return document.getElementById(id).value; }
+
+/* ---------- Generic category list + form ---------- */
+function renderCategory(main, cat){
+  const meta = CATS[cat];
+  const records = db[cat];
+  const writable = canWrite(cat);
+  main.innerHTML = `
+    <div class="toolbar">
+      <div>
+        <h1 style="margin-bottom:2px">${meta.label}</h1>
+        <p class="sub" style="margin:0">${records.length} record(s) · saved with date/time stamp</p>
+      </div>
+      ${writable ? `<button class="btn-dark" onclick="openForm('${cat}')">+ New ${meta.label.replace(/s$/,'')}</button>` : ``}
+    </div>
+    ${!writable ? `<div class="readonly-note">👁 View-only — ask the admin to make changes here.</div>` : ``}
+    <div class="card">
+      ${records.length===0 ? `<div class="empty">No ${meta.label.toLowerCase()} yet.${writable ? ' Click "+ New" to add one.' : ''}</div>` : `
+      <table>
+        <thead><tr><th>Date/Time</th>${meta.fields.map(f=>`<th>${f}</th>`).join("")}${writable||PERM.canDelete?`<th></th>`:``}</tr></thead>
+        <tbody>
+          ${records.slice().reverse().map(r=>`
+            <tr>
+              <td>${r.timestamp}</td>
+              ${meta.fields.map(f=>`<td>${r[f]??""}</td>`).join("")}
+              ${writable||PERM.canDelete?`<td style="white-space:nowrap">
+                ${writable?`<button class="btn-outline btn-sm" onclick="openForm('${cat}','${r.id}')">Edit</button>`:``}
+                ${PERM.canDelete?`<button class="btn-danger btn-sm" onclick="deleteRecord('${cat}','${r.id}')">Delete</button>`:``}
+              </td>`:``}
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`}
+    </div>
+  `;
+}
+
+function openForm(cat, editId){
+  if(!canWrite(cat)) return;
+  const meta = CATS[cat];
+  const existing = editId ? db[cat].find(r=>r.id===editId) : null;
+  const options = {};
+  if(cat==="vehicles" || cat==="quotations" || cat==="jobOrders" || cat==="invoices" || cat==="reminders"){
+    options.customerList = db.customers.map(c=>c.name);
+    if(existing && existing.customer && !options.customerList.includes(existing.customer)){
+      options.customerList.push(existing.customer);
+    }
+  }
+  const cur = f => existing ? (existing[f] ?? "") : "";
+  const sel = (f,opts) => `<div class="field"><label>${f}</label><select id="f_${f}">
+      ${opts.map(o=>`<option ${cur(f)===o?'selected':''}>${o}</option>`).join("")}
+    </select></div>`;
+  const fieldsHtml = meta.fields.map(f=>{
+    if(f==="customer" && options.customerList){
+      return `<div class="field"><label>${f}</label>
+        <select id="f_${f}">
+          <option value="">Pick customer</option>
+          ${options.customerList.map(n=>`<option ${cur(f)===n?'selected':''}>${n}</option>`).join("")}
+        </select></div>`;
+    }
+    if(f==="status" && cat==="quotations") return sel(f,["Draft","Sent","Approved","Declined","Converted"]);
+    if(f==="status" && cat==="jobOrders") return sel(f,["Pending","In Progress","Awaiting Parts","Ready for Pickup","Completed","Delivered"]);
+    if(f==="status" && cat==="invoices") return sel(f,["Draft","Sent","Paid","Overdue"]);
+    if(f==="priority") return sel(f,["Normal","Urgent"]);
+    if(f==="notes" || f==="services"){
+      return `<div class="field"><label>${f}</label><textarea id="f_${f}">${cur(f)}</textarea></div>`;
+    }
+    return `<div class="field"><label>${f}</label><input id="f_${f}" value="${String(cur(f)).replace(/"/g,'&quot;')}"></div>`;
+  }).join("");
+
+  openModal(`
+    <h2>${existing?'Edit':'New'} ${meta.label.replace(/s$/,'')}</h2>
+    <div class="field-grid">${fieldsHtml}</div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn-dark" onclick="submitForm('${cat}','${editId||''}')">Save</button>
+    </div>
+  `);
+}
+function submitForm(cat, editId){
+  const meta = CATS[cat];
+  const obj = {};
+  meta.fields.forEach(f=>{ const el=document.getElementById("f_"+f); if(el) obj[f]=el.value; });
+  if(editId) updateRecord(cat, editId, obj);
+  else addRecord(cat, obj);
+  closeModal();
+}
+
+/* ---------- init ---------- */
+render();
+</script>
+</body>
+</html>
