@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SA Vault</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #F2F4F3;
+    --surface: #FFFFFF;
+    --ink: #22302C;
+    --muted: #5D6E68;
+    --line: #D8DFDC;
+    --accent: #0E7A5F;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #E3F0EB;
+    --danger: #C4452E;
+    --danger-soft: #F7E7E3;
+    --focus: #0E7A5F;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131A18;
+      --surface: #1C2522;
+      --ink: #E7ECEA;
+      --muted: #93A39D;
+      --line: #2C3833;
+      --accent: #3ECF9A;
+      --accent-ink: #10201A;
+      --accent-soft: #1F312A;
+      --danger: #E5745F;
+      --danger-soft: #3A241F;
+      --focus: #3ECF9A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131A18;
+    --surface: #1C2522;
+    --ink: #E7ECEA;
+    --muted: #93A39D;
+    --line: #2C3833;
+    --accent: #3ECF9A;
+    --accent-ink: #10201A;
+    --accent-soft: #1F312A;
+    --danger: #E5745F;
+    --danger-soft: #3A241F;
+    --focus: #3ECF9A;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 20px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  header.app {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .wordmark {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 700;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .wordmark .dot { color: var(--accent); }
+  .tag {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px 24px;
+  }
+
+  /* ---------- Lock / setup screens ---------- */
+  .lock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 18px;
+  }
+  .lock h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.45rem;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lock p.hint {
+    margin: 0;
+    color: var(--muted);
+    max-width: 40ch;
+  }
+  .micbtn {
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+  .micbtn:hover { transform: scale(1.04); }
+  .micbtn:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+  .micbtn svg { width: 44px; height: 44px; }
+  .micbtn.listening {
+    background: var(--danger);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .micbtn.listening { animation: none; }
+    .micbtn:hover { transform: none; }
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+    50% { box-shadow: 0 0 0 16px transparent; }
+  }
+  .status {
+    min-height: 1.5em;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+  .status.bad { color: var(--danger); }
+  .status.good { color: var(--accent); }
+
+  .altrow { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 340px; }
+  .altrow input[type="password"], .altrow input[type="text"] {
+    width: 100%;
+  }
+
+  /* ---------- Vault ---------- */
+  .vault { display: none; flex-direction: column; gap: 16px; }
+  .vault h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.3rem;
+    margin: 0;
+  }
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  .row {
+    display: grid;
+    grid-template-columns: 130px 1fr 38px;
+    gap: 8px;
+    align-items: center;
+  }
+  @media (max-width: 480px) {
+    .row { grid-template-columns: 108px 1fr 38px; }
+  }
+  select, input {
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    width: 100%;
+  }
+  .row input { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92rem; }
+  select:focus-visible, input:focus-visible, button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .removebtn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--muted);
+    border-radius: 8px;
+    height: 42px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .removebtn:hover { color: var(--danger); border-color: var(--danger); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .btn.ghost { background: transparent; }
+  .btn.linky {
+    border: none;
+    background: none;
+    color: var(--muted);
+    text-decoration: underline;
+    padding: 6px 4px;
+    font-weight: 400;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .btn.linky:hover { color: var(--danger); }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--ink);
+    color: var(--ground);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .note {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin: 0;
+  }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <h1 class="wordmark">SA Vault<span class="dot">.</span></h1>
+    <span class="tag" id="lockTag">Locked</span>
+  </header>
+
+  <!-- Setup: first run, record a passphrase -->
+  <section class="panel lock" id="setupScreen" hidden>
+    <h2>Set your voice passphrase</h2>
+    <p class="hint">Tap the microphone and speak a phrase you'll remember — for example "open my vault". You'll say it each time to unlock.</p>
+    <button class="micbtn" id="setupMic" aria-label="Record passphrase">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>
+    </button>
+    <div class="status" id="setupStatus" aria-live="polite"></div>
+    <div class="altrow">
+      <input type="text" id="setupTyped" placeholder="…or type a passphrase" autocomplete="off">
+      <button class="btn primary" id="setupSave">Save passphrase</button>
+    </div>
+  </section>
+
+  <!-- Login -->
+  <section class="panel lock" id="loginScreen" hidden>
+    <h2>Speak to unlock</h2>
+    <p class="hint">Tap the microphone and say your passphrase.</p>
+    <button class="micbtn" id="loginMic" aria-label="Speak passphrase to unlock">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>
+    </button>
+    <div class="status" id="loginStatus" aria-live="polite"></div>
+    <div class="altrow">
+      <input type="password" id="loginTyped" placeholder="…or type your passphrase" autocomplete="off">
+      <button class="btn" id="loginTypedBtn">Unlock by typing</button>
+      <button class="btn linky" id="resetApp">Reset app (erases passphrase and saved info)</button>
+    </div>
+  </section>
+
+  <!-- Vault -->
+  <section class="panel vault" id="vaultScreen">
+    <h2>My information</h2>
+    <div class="rows" id="rows"></div>
+    <div class="actions">
+      <button class="btn" id="addRow">+ Add row</button>
+      <button class="btn primary" id="saveBtn">Save</button>
+      <button class="btn ghost" id="lockBtn">Lock</button>
+    </div>
+    <p class="note">Saved on this device only (browser storage). Nothing is uploaded.</p>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// Bridge the browser SpeechRecognition API to Android's native recognizer
+// when running inside the SA Vault Android app (AndroidVoice is injected there).
+if (window.AndroidVoice) {
+  window.SpeechRecognition = function () {
+    this.lang = "en-US";
+    this.interimResults = false;
+    this.maxAlternatives = 3;
+  };
+  window.SpeechRecognition.prototype.start = function () {
+    window.__savaultRec = this;
+    window.AndroidVoice.start(this.lang || "en-US");
+  };
+  window.__savaultOnResult = function (json) {
+    var rec = window.__savaultRec;
+    if (!rec) return;
+    var alts = [];
+    try { alts = JSON.parse(json); } catch (e) {}
+    var res = alts.map(function (t) { return { transcript: t }; });
+    if (rec.onresult) rec.onresult({ results: [res] });
+    if (rec.onend) rec.onend();
+  };
+  window.__savaultOnError = function (code) {
+    var rec = window.__savaultRec;
+    if (!rec) return;
+    if (rec.onerror) rec.onerror({ error: code });
+    if (rec.onend) rec.onend();
+  };
+}
+</script>
+<script>
+(function () {
+  "use strict";
+
+  var KEY_PASS = "voiceVault.passHash";
+  var KEY_DATA = "voiceVault.rows";
+  var TYPES = ["Email", "Website", "Phone", "Username", "Address", "Note"];
+  var PLACEHOLDERS = {
+    Email: "name@example.com",
+    Website: "https://example.com",
+    Phone: "+1 555 010 0199",
+    Username: "your-handle",
+    Address: "123 Main St, City",
+    Note: "anything to remember"
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var setupScreen = $("setupScreen"), loginScreen = $("loginScreen"), vaultScreen = $("vaultScreen");
+  var lockTag = $("lockTag"), rowsEl = $("rows"), toastEl = $("toast");
+
+  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function removeKey(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+  function normalize(s) {
+    return (s || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
+  }
+
+  function hash(s) {
+    if (window.crypto && crypto.subtle && window.isSecureContext) {
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (buf) {
+        return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+          return b.toString(16).padStart(2, "0");
+        }).join("");
+      });
+    }
+    // Fallback (non-secure contexts): FNV-1a, still avoids storing plaintext.
+    var h = 0x811c9dc5;
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = (h * 0x01000193) >>> 0;
+    }
+    return Promise.resolve("fnv:" + h.toString(16));
+  }
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+
+  function show(screen) {
+    setupScreen.hidden = screen !== "setup";
+    loginScreen.hidden = screen !== "login";
+    vaultScreen.style.display = screen === "vault" ? "flex" : "none";
+    lockTag.textContent = screen === "vault" ? "Unlocked" : "Locked";
+  }
+
+  /* ---------- Speech recognition ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function listen(btn, statusEl, onResult) {
+    if (!SR) {
+      statusEl.textContent = "Voice input isn't supported in this browser — use the typed option below.";
+      statusEl.className = "status bad";
+      return;
+    }
+    var rec = new SR();
+    rec.lang = navigator.language || "en-US";
+    rec.interimResults = false;
+    rec.maxAlternatives = 3;
+    btn.classList.add("listening");
+    statusEl.textContent = "Listening…";
+    statusEl.className = "status";
+    var done = function () { btn.classList.remove("listening"); };
+    rec.onresult = function (ev) {
+      done();
+      var alts = [];
+      var res = ev.results[0];
+      for (var i = 0; i < res.length; i++) alts.push(res[i].transcript);
+      onResult(alts);
+    };
+    rec.onerror = function (ev) {
+      done();
+      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+        statusEl.textContent = "Microphone access was blocked. Allow it in your browser, or type instead.";
+      } else if (ev.error === "no-speech") {
+        statusEl.textContent = "Didn't hear anything — tap and try again.";
+      } else {
+        statusEl.textContent = "Voice input failed (" + ev.error + "). You can type instead.";
+      }
+      statusEl.className = "status bad";
+    };
+    rec.onend = done;
+    try { rec.start(); } catch (e) { done(); }
+  }
+
+  /* ---------- Setup ---------- */
+  function savePassphrase(phrase, statusEl) {
+    var norm = normalize(phrase);
+    if (norm.length < 3) {
+      statusEl.textContent = "That's too short — use at least a couple of words.";
+      statusEl.className = "status bad";
+      return;
+    }
+    hash(norm).then(function (h) {
+      store(KEY_PASS, h);
+      toast("Passphrase saved");
+      enterVault();
+    });
+  }
+
+  $("setupMic").addEventListener("click", function () {
+    var st = $("setupStatus");
+    listen(this, st, function (alts) {
+      var heard = alts[0] || "";
+      st.textContent = "Heard: “" + heard + "” — saving it as your passphrase.";
+      st.className = "status good";
+      $("setupTyped").value = heard;
+      savePassphrase(heard, st);
+    });
+  });
+  $("setupSave").addEventListener("click", function () {
+    savePassphrase($("setupTyped").value, $("setupStatus"));
+  });
+
+  /* ---------- Login ---------- */
+  function tryUnlock(candidates, statusEl) {
+    var stored = load(KEY_PASS);
+    if (!stored) { show("setup"); return; }
+    var pending = candidates.map(function (c) { return hash(normalize(c)); });
+    Promise.all(pending).then(function (hashes) {
+      if (hashes.indexOf(stored) !== -1) {
+        statusEl.textContent = "Voice recognized. Welcome back.";
+        statusEl.className = "status good";
+        enterVault();
+      } else {
+        statusEl.textContent = "That didn't match" +
+          (candidates[0] ? " (heard “" + candidates[0] + "”)" : "") + ". Try again.";
+        statusEl.className = "status bad";
+      }
+    });
+  }
+
+  $("loginMic").addEventListener("click", function () {
+    listen(this, $("loginStatus"), function (alts) { tryUnlock(alts, $("loginStatus")); });
+  });
+  $("loginTypedBtn").addEventListener("click", function () {
+    tryUnlock([$("loginTyped").value], $("loginStatus"));
+  });
+  $("loginTyped").addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") tryUnlock([this.value], $("loginStatus"));
+  });
+  $("resetApp").addEventListener("click", function () {
+    if (confirm("Erase your passphrase and all saved information on this device?")) {
+      removeKey(KEY_PASS);
+      removeKey(KEY_DATA);
+      rowsEl.innerHTML = "";
+      show("setup");
+    }
+  });
+
+  /* ---------- Vault rows ---------- */
+  function makeRow(type, value) {
+    var row = document.createElement("div");
+    row.className = "row";
+
+    var sel = document.createElement("select");
+    sel.setAttribute("aria-label", "Type of information");
+    TYPES.forEach(function (t) {
+      var opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      if (t === type) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.value = value || "";
+    inp.placeholder = PLACEHOLDERS[type || "Email"];
+    inp.setAttribute("aria-label", "Value");
+    sel.addEventListener("change", function () {
+      inp.placeholder = PLACEHOLDERS[sel.value] || "";
+    });
+
+    var del = document.createElement("button");
+    del.className = "removebtn";
+    del.textContent = "×";
+    del.setAttribute("aria-label", "Remove this row");
+    del.addEventListener("click", function () { row.remove(); });
+
+    row.appendChild(sel);
+    row.appendChild(inp);
+    row.appendChild(del);
+    rowsEl.appendChild(row);
+    return row;
+  }
+
+  function collectRows() {
+    var out = [];
+    rowsEl.querySelectorAll(".row").forEach(function (row) {
+      var type = row.querySelector("select").value;
+      var value = row.querySelector("input").value.trim();
+      if (value) out.push({ type: type, value: value });
+    });
+    return out;
+  }
+
+  function loadRows() {
+    rowsEl.innerHTML = "";
+    var saved = [];
+    try { saved = JSON.parse(load(KEY_DATA) || "[]"); } catch (e) {}
+    if (saved.length) {
+      saved.forEach(function (r) { makeRow(r.type, r.value); });
+    } else {
+      makeRow("Email", "");
+      makeRow("Website", "");
+    }
+  }
+
+  $("addRow").addEventListener("click", function () {
+    var row = makeRow("Email", "");
+    row.querySelector("input").focus();
+  });
+  $("saveBtn").addEventListener("click", function () {
+    store(KEY_DATA, JSON.stringify(collectRows()));
+    toast("Saved");
+  });
+  $("lockBtn").addEventListener("click", function () {
+    show("login");
+    $("loginStatus").textContent = "";
+    $("loginTyped").value = "";
+  });
+
+  function enterVault() {
+    loadRows();
+    show("vault");
+  }
+
+  /* ---------- Boot ---------- */
+  show(load(KEY_PASS) ? "login" : "setup");
+})();
+</script>
+
+</body>
+</html>
