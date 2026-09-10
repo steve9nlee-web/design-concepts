@@ -33,6 +33,10 @@
   .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
   .stat{font-size:28px;font-weight:700;}
   .stat-label{color:var(--muted);font-size:13px;}
+  .card.tap{cursor:pointer;transition:transform .08s ease,border-color .15s,box-shadow .15s;}
+  .card.tap:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(37,99,235,.14);}
+  .card.tap:active{transform:scale(.97);}
+  .tap-hint{font-size:11.5px;color:var(--accent);margin-top:2px;font-weight:600;}
   input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;width:100%;}
   textarea{min-height:60px;resize:vertical;}
   label{font-size:12.5px;font-weight:600;color:#334155;display:block;margin-bottom:5px;}
@@ -132,6 +136,28 @@ function mechanicNames(extra){
   (db.jobOrders||[]).forEach(j=>{ if(j.mechanic) set.add(j.mechanic); });
   if(extra) set.add(extra);
   return [...set];
+}
+/* Running document number: prefix + YYMM + "-" + sequence, restarting each
+   month, e.g. Q2609-001. Highest existing number for the month wins, so it
+   keeps counting correctly after data syncs in from another device. */
+function nextDocNo(cat, field, prefix){
+  const d = new Date();
+  const stem = prefix + String(d.getFullYear()).slice(-2) + String(d.getMonth()+1).padStart(2,"0") + "-";
+  let max = 0;
+  (db[cat]||[]).forEach(r=>{
+    const v = String(r[field]||"");
+    if(v.indexOf(stem)===0){
+      const n = parseInt(v.slice(stem.length),10);
+      if(!isNaN(n) && n>max) max = n;
+    }
+  });
+  return stem + String(max+1).padStart(3,"0");
+}
+function dateInDays(days){
+  const d = new Date();
+  d.setDate(d.getDate()+days);
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 function addMechanicName(){
   const n = (prompt("New mechanic name:")||"").trim();
@@ -444,7 +470,7 @@ function renderDashboard(main){
     <p class="sub">Signed in as ${PERM.label} · data stored on this device</p>
     <div class="grid4">
       ${Object.entries(CATS).filter(([k])=>PERM.cats.includes(k)).map(([k,v])=>`
-        <div class="card"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div></div>
+        <div class="card tap" onclick="nav('${k}')"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div><div class="tap-hint">Tap to open ›</div></div>
       `).join("")}
     </div>
     <div class="exportbar">
@@ -606,6 +632,18 @@ function openForm(cat, editId){
           </select>
           <button type="button" class="btn-outline btn-sm" onclick="addMechanicName()" style="white-space:nowrap">+ Add name</button>
         </div></div>`;
+    }
+    if(f==="quoteNo" && cat==="quotations"){
+      const v = existing ? cur(f) : nextDocNo("quotations","quoteNo","Q");
+      return `<div class="field"><label>quoteNo</label>
+        <input id="f_quoteNo" value="${String(v).replace(/"/g,'&quot;')}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Auto-numbered — edit if you need to</div></div>`;
+    }
+    if(f==="validUntil"){
+      const v = existing ? cur(f) : dateInDays(7);
+      return `<div class="field"><label>validUntil</label>
+        <input id="f_validUntil" type="date" value="${String(v).replace(/"/g,'&quot;')}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Defaults to one week from today</div></div>`;
     }
     if(f==="department") return sel(f,["Repairing","Painting"]);
     if(f==="status" && cat==="quotations") return sel(f,["Draft","Sent","Approved","Declined","Converted"]);
