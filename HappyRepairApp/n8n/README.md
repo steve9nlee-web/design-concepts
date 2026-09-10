@@ -70,9 +70,9 @@ exactly, each with these header cells in row 1:
 |---|---|
 | `Customers` | `Date/Time, ID, name, phone, email, address` |
 | `Vehicles` | `Date/Time, ID, plate, make, model, year, color, customer` |
-| `Quotations` | `Date/Time, ID, quoteNo, customer, plate, status, validUntil, tax, notes, total` |
+| `Quotations` | `Date/Time, ID, quoteNo, customer, plate, status, validUntil, items, total` |
 | `Job Orders` | `Date/Time, ID, jobNo, customer, plate, priority, status, mechanic, department, services` |
-| `Invoices` | `Date/Time, ID, invoiceNo, jobNo, customer, plate, vehicle, amount, status` |
+| `Invoices` | `Date/Time, ID, invoiceNo, jobNo, customer, plate, vehicle, items, amount, status` |
 | `Inventory` | `Date/Time, ID, name, category, sku, qty, unit, cost, sell, reorderLevel` |
 | `Reminders` | `Date/Time, ID, customer, phone, plate, dueDate, lastService, status` |
 

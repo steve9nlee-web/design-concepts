@@ -49,6 +49,10 @@
   .btn-outline{background:#fff;border:1px solid var(--line);color:var(--text);}
   .btn-danger{background:#fef2f2;color:var(--red);border:1px solid #fecaca;}
   .btn-send{background:#eff6ff;color:var(--accent);border:1px solid #bfdbfe;}
+  .itemrow{display:flex;gap:6px;margin-bottom:6px;}
+  .itemrow .it-desc{flex:1;}
+  .itemrow .it-amt{width:110px;flex:none;}
+  .itemrow .btn-sm{flex:none;}
   .btn-sm{padding:6px 10px;font-size:12.5px;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   th{text-align:left;color:var(--muted);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--line);font-size:12.5px;}
@@ -128,9 +132,9 @@ function canWrite(cat){ return PERM.cats.includes(cat) && !PERM.readOnly.include
 const CATS = {
   customers:  {label:"Customers",  icon:"👤", fields:["name","phone","email","address"]},
   vehicles:   {label:"Vehicles",   icon:"🚗", fields:["plate","make","model","year","color","customer"]},
-  quotations: {label:"Quotations", icon:"💲", fields:["quoteNo","customer","plate","status","validUntil","tax","notes","total"]},
+  quotations: {label:"Quotations", icon:"💲", fields:["quoteNo","customer","plate","status","validUntil","items","total"]},
   jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","customer","plate","priority","status","mechanic","department","services"]},
-  invoices:   {label:"Invoices",   icon:"🧾", fields:["invoiceNo","jobNo","customer","plate","vehicle","amount","status"]},
+  invoices:   {label:"Invoices",   icon:"🧾", fields:["invoiceNo","jobNo","customer","plate","vehicle","items","amount","status"]},
   inventory:  {label:"Inventory",  icon:"🔩", fields:["name","category","sku","qty","unit","cost","sell","reorderLevel"]},
   reminders:  {label:"Reminders",  icon:"🔔", fields:["customer","phone","plate","dueDate","lastService","status"]},
 };
@@ -438,6 +442,57 @@ window.onExcelImport = function(b64){
 };
 window.onExcelImportError = function(){ toast("Could not open that file"); };
 
+/* ---------- Work lines: one per line, stored as "description | amount" ---------- */
+function parseItems(text){
+  return String(text||"").split("\n").map(l=>l.trim()).filter(Boolean).map(line=>{
+    const i = line.lastIndexOf("|");
+    return i === -1 ? {desc:line, amount:""}
+                    : {desc:line.slice(0,i).trim(), amount:line.slice(i+1).trim()};
+  });
+}
+function itemsTotal(text){
+  return parseItems(text).reduce((sum,it)=> sum + (Number(String(it.amount).replace(/[^0-9.\-]/g,"")) || 0), 0);
+}
+function plateList(extra){
+  const set = new Set((db.vehicles||[]).map(v=>v.plate).filter(Boolean));
+  if(extra) set.add(extra);
+  return [...set];
+}
+function esc(v){
+  return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ---------- Work-line editor inside the form ---------- */
+function itemRowHtml(it){
+  return `<div class="itemrow">
+    <input class="it-desc" placeholder="what to repair / what to spray" value="${esc(it&&it.desc)}" oninput="syncItems()">
+    <input class="it-amt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" value="${esc(it&&it.amount)}" oninput="syncItems()">
+    <button type="button" class="btn-danger btn-sm" onclick="this.parentNode.remove();syncItems()" title="Remove">✕</button>
+  </div>`;
+}
+function addItemRow(){
+  const box = document.getElementById("itemrows");
+  if(!box) return;
+  box.insertAdjacentHTML("beforeend", itemRowHtml(null));
+  const rows = box.querySelectorAll(".it-desc");
+  if(rows.length) rows[rows.length-1].focus();
+  syncItems();
+}
+function syncItems(){
+  const box = document.getElementById("itemrows");
+  const hidden = document.getElementById("f_items");
+  if(!box || !hidden) return;
+  const lines = [...box.querySelectorAll(".itemrow")].map(r=>{
+    const d = r.querySelector(".it-desc").value.trim();
+    const a = r.querySelector(".it-amt").value.trim();
+    return d || a ? d + " | " + a : "";
+  }).filter(Boolean);
+  hidden.value = lines.join("\n");
+  const total = document.getElementById("f_total") || document.getElementById("f_amount");
+  if(total && lines.length) total.value = itemsTotal(hidden.value).toFixed(2);
+}
+
 /* ---------- PDF documents (offline, shareable to WhatsApp etc.) ---------- */
 function money(n){
   const v = Number(String(n).replace(/[^0-9.\-]/g,"")) || 0;
@@ -492,15 +547,26 @@ function buildDocPdf(kind, rec){
   doc.text("AMOUNT (" + shopCurrency() + ")", R - 3, y + 6, {align:"right"});
   y += 9;
 
-  const desc = String(kind === "quotation" ? (rec.notes || "Workshop services as quoted")
-                                           : (rec.jobNo ? "Workshop services — job " + rec.jobNo
-                                                        : "Workshop services rendered"));
   const base = kind === "quotation" ? rec.total : rec.amount;
+  const items = parseItems(rec.items);
   doc.setFont("helvetica","normal"); doc.setTextColor(15,23,42); doc.setFontSize(10);
-  const wrapped = doc.splitTextToSize(desc, W - 45);
-  doc.text(wrapped, L + 3, y + 6);
-  doc.text(money(base), R - 3, y + 6, {align:"right"});
-  y += Math.max(14, wrapped.length * 5 + 9);
+  if(items.length){
+    y += 3;
+    items.forEach(it=>{
+      const wrapped = doc.splitTextToSize(it.desc || "—", W - 45);
+      doc.text(wrapped, L + 3, y + 5);
+      if(String(it.amount).trim() !== "") doc.text(money(it.amount), R - 3, y + 5, {align:"right"});
+      y += Math.max(8, wrapped.length * 5 + 3);
+    });
+    y += 3;
+  } else {
+    const fallback = kind === "quotation" ? "Workshop services as quoted"
+                   : (rec.jobNo ? "Workshop services — job " + rec.jobNo : "Workshop services rendered");
+    const wrapped = doc.splitTextToSize(fallback, W - 45);
+    doc.text(wrapped, L + 3, y + 6);
+    doc.text(money(base), R - 3, y + 6, {align:"right"});
+    y += Math.max(14, wrapped.length * 5 + 9);
+  }
   doc.setDrawColor(226,232,240); doc.line(L, y, R, y);
 
   /* The amount entered is the amount charged — no tax is added on top. */
@@ -557,6 +623,7 @@ function autoInvoiceFromJob(job){
     customer: job.customer || "",
     plate: job.plate || "",
     vehicle: veh ? [veh.make, veh.model].filter(Boolean).join(" ") : "",
+    items: quote && quote.items ? String(quote.items) : "",
     amount: quote && quote.total ? String(quote.total) : "",
     status: "Draft",
     id: "IN-" + Date.now(),
@@ -749,7 +816,8 @@ function renderCategory(main, cat){
               ${cols.map(f=>{
                 const v = r[f] ?? "";
                 const cls = (v===""?"blank-cell":"") + (f==="plate"?" key-cell":"");
-                return `<td data-label="${f}" class="${cls.trim()}">${v}</td>`;
+                const shown = f==="items" ? esc(v).replace(/\n/g,"<br>") : esc(v);
+                return `<td data-label="${f}" class="${cls.trim()}">${shown}</td>`;
               }).join("")}
               ${writable||PERM.canDelete||canPdf?`<td class="row-actions" style="white-space:nowrap">
                 ${canPdf?`<button class="btn-send btn-sm" onclick="sharePdf('${cat}','${r.id}')">📄 Send PDF</button>`:``}
@@ -798,6 +866,27 @@ function openForm(cat, editId){
           <button type="button" class="btn-outline btn-sm" onclick="addMechanicName()" style="white-space:nowrap">+ Add name</button>
         </div></div>`;
     }
+    if(f==="plate" && cat!=="vehicles"){
+      const plates = plateList(cur(f));
+      return `<div class="field"><label>plate</label>
+        <select id="f_plate" onchange="platePicked()">
+          <option value="">Pick car plate</option>
+          ${plates.map(n=>`<option ${cur(f)===n?'selected':''}>${esc(n)}</option>`).join("")}
+        </select>
+        ${plates.length?``:`<div style="font-size:11.5px;color:var(--muted);margin-top:4px">No vehicles yet — add one under Vehicles first</div>`}</div>`;
+    }
+    if(f==="items"){
+      const rows = parseItems(cur(f));
+      return `<div class="field" style="grid-column:1/-1"><label>description of work</label>
+        <input type="hidden" id="f_items" value="${esc(cur(f))}">
+        <div id="itemrows">${(rows.length?rows:[null]).map(itemRowHtml).join("")}</div>
+        <button type="button" class="btn-outline btn-sm" style="margin-top:6px" onclick="addItemRow()">+ Add description</button></div>`;
+    }
+    if(f==="total" || (f==="amount" && cat==="invoices")){
+      return `<div class="field"><label>${f}</label>
+        <input id="f_${f}" type="number" inputmode="decimal" step="0.01" value="${esc(cur(f))}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Adds up the lines above — edit if you need to</div></div>`;
+    }
     if(f==="invoiceNo" && cat==="invoices"){
       const v = existing ? cur(f) : nextDocNo("invoices","invoiceNo","INV");
       return `<div class="field"><label>invoiceNo</label>
@@ -836,9 +925,17 @@ function openForm(cat, editId){
     </div>
   `);
 }
+function platePicked(){
+  const p = document.getElementById("f_plate");
+  const c = document.getElementById("f_customer");
+  if(!p || !c || c.value) return;
+  const veh = (db.vehicles||[]).find(v=>v.plate === p.value);
+  if(veh && veh.customer && [...c.options].some(o=>o.value === veh.customer)) c.value = veh.customer;
+}
 function submitForm(cat, editId){
   const meta = CATS[cat];
   const obj = {};
+  syncItems();
   meta.fields.forEach(f=>{ const el=document.getElementById("f_"+f); if(el) obj[f]=el.value; });
   if(editId) updateRecord(cat, editId, obj);
   else addRecord(cat, obj);
