@@ -74,6 +74,9 @@
   .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;font-size:13.5px;z-index:99;opacity:0;transition:opacity .2s;}
   .toast.show{opacity:1;}
+  .ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-46px);background:var(--navy);color:#fff;
+       padding:8px 18px;border-radius:0 0 12px 12px;font-size:13px;z-index:98;transition:transform .18s ease;}
+  .ptr.show{transform:translate(-50%,0);}
   .exportbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
   .switch{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
   .readonly-note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
@@ -107,6 +110,7 @@
 </div>
 <div class="modalbg" id="modalbg"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast"></div>
+<div class="ptr" id="ptr">↓ Pull to refresh</div>
 
 <script>
 /* ---------- Role ---------- */
@@ -120,7 +124,7 @@ const ROLES = {
   },
   mechanic: {
     label: "Mechanic",
-    cats: ["jobOrders","quotations","vehicles","invoices","inventory","reminders"],
+    cats: ["jobOrders","quotations","customers","vehicles","invoices","inventory","reminders"],
     readOnly: ["invoices","inventory","reminders"],
     canDelete: false, canExport: false, canSettings: false, canImport: true,
   },
@@ -133,7 +137,7 @@ const CATS = {
   customers:  {label:"Customers",  icon:"👤", fields:["name","phone","email","address"]},
   vehicles:   {label:"Vehicles",   icon:"🚗", fields:["plate","make","model","year","color","customer"]},
   quotations: {label:"Quotations", icon:"💲", fields:["quoteNo","customer","plate","status","validUntil","items","total"]},
-  jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","customer","plate","priority","status","mechanic","department","services"]},
+  jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","quoteNo","customer","plate","priority","status","mechanic","department","items","total"]},
   invoices:   {label:"Invoices",   icon:"🧾", fields:["invoiceNo","jobNo","customer","plate","vehicle","items","amount","status"]},
   inventory:  {label:"Inventory",  icon:"🔩", fields:["name","category","sku","qty","unit","cost","sell","reorderLevel"]},
   reminders:  {label:"Reminders",  icon:"🔔", fields:["customer","phone","plate","dueDate","lastService","status"]},
@@ -212,10 +216,7 @@ function addRecord(cat, obj){
   toast(CATS[cat].label.slice(0,-1)+" saved");
   autoExportIfOn();
   pushRecord(cat, obj);
-  if(cat === "jobOrders"){
-    const inv = autoInvoiceFromJob(obj);
-    if(inv) toast("Delivered — invoice " + inv.invoiceNo + " created");
-  }
+  runConversions(cat, obj);
   render();
 }
 function updateRecord(cat, id, obj){
@@ -227,11 +228,18 @@ function updateRecord(cat, id, obj){
   toast(CATS[cat].label.slice(0,-1)+" updated");
   autoExportIfOn();
   pushRecord(cat, r);
-  if(cat === "jobOrders"){
-    const inv = autoInvoiceFromJob(r);
-    if(inv) toast("Delivered — invoice " + inv.invoiceNo + " created");
-  }
+  runConversions(cat, r);
   render();
+}
+function runConversions(cat, rec){
+  if(cat === "quotations"){
+    const job = autoJobFromQuote(rec);
+    if(job) toast("Converted — job order " + job.jobNo + " created");
+  }
+  if(cat === "jobOrders"){
+    const inv = autoInvoiceFromJob(rec);
+    if(inv) toast(rec.status + " — invoice " + inv.invoiceNo + " created");
+  }
 }
 function deleteRecord(cat,id){
   if(!PERM.canDelete) return;
@@ -453,10 +461,17 @@ function parseItems(text){
 function itemsTotal(text){
   return parseItems(text).reduce((sum,it)=> sum + (Number(String(it.amount).replace(/[^0-9.\-]/g,"")) || 0), 0);
 }
-function plateList(extra){
-  const set = new Set((db.vehicles||[]).map(v=>v.plate).filter(Boolean));
+function plateList(extra, customer){
+  let vs = db.vehicles || [];
+  if(customer) vs = vs.filter(v=>String(v.customer||"").trim() === String(customer).trim());
+  const set = new Set(vs.map(v=>v.plate).filter(Boolean));
   if(extra) set.add(extra);
   return [...set];
+}
+function plateOptionsHtml(selected, customer){
+  const list = plateList(selected, customer);
+  return `<option value="">Pick car plate</option>` +
+    list.map(n=>`<option ${selected===n?'selected':''}>${esc(n)}</option>`).join("");
 }
 function esc(v){
   return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;")
@@ -602,13 +617,42 @@ function sharePdf(cat, id){
   }
 }
 
-/* ---------- Delivered job orders become invoices automatically ---------- */
+/* ---------- Quotation ➜ job order ➜ invoice, all linked by their numbers ---------- */
+function jobForQuote(quoteNo){
+  if(!quoteNo) return null;
+  return (db.jobOrders||[]).find(j=>String(j.quoteNo||"") === String(quoteNo)) || null;
+}
+function autoJobFromQuote(q){
+  if(!q || String(q.status) !== "Converted" || !q.quoteNo) return null;
+  if(jobForQuote(q.quoteNo)) return null;                /* already converted */
+  const job = {
+    jobNo: nextDocNo("jobOrders","jobNo","J"),
+    quoteNo: q.quoteNo,
+    customer: q.customer || "",
+    plate: q.plate || "",
+    priority: "Normal",
+    status: "Pending",
+    mechanic: "",
+    department: "Repairing",
+    items: q.items || "",
+    total: q.total || "",
+    id: "JO-" + Date.now(),
+    timestamp: nowStamp(),
+  };
+  db.jobOrders.push(job);
+  saveDB();
+  pushRecord("jobOrders", job);
+  return job;
+}
+
+/* ---------- Finished job orders become invoices automatically ---------- */
 function invoiceForJob(jobNo){
   if(!jobNo) return null;
   return (db.invoices||[]).find(i=>String(i.jobNo||"") === String(jobNo)) || null;
 }
+const JOB_DONE = ["Completed","Delivered"];
 function autoInvoiceFromJob(job){
-  if(!job || String(job.status) !== "Delivered" || !job.jobNo) return null;
+  if(!job || !JOB_DONE.includes(String(job.status)) || !job.jobNo) return null;
   if(invoiceForJob(job.jobNo)) return null;              /* already invoiced */
   const samePlate = r => r.plate && job.plate &&
     String(r.plate).trim().toLowerCase() === String(job.plate).trim().toLowerCase();
@@ -623,8 +667,8 @@ function autoInvoiceFromJob(job){
     customer: job.customer || "",
     plate: job.plate || "",
     vehicle: veh ? [veh.make, veh.model].filter(Boolean).join(" ") : "",
-    items: quote && quote.items ? String(quote.items) : "",
-    amount: quote && quote.total ? String(quote.total) : "",
+    items: job.items || (quote && quote.items ? String(quote.items) : ""),
+    amount: job.total || (quote && quote.total ? String(quote.total) : ""),
     status: "Draft",
     id: "IN-" + Date.now(),
     timestamp: nowStamp(),
@@ -850,7 +894,7 @@ function openForm(cat, editId){
   const fieldsHtml = meta.fields.map(f=>{
     if(f==="customer" && options.customerList){
       return `<div class="field"><label>${f}</label>
-        <select id="f_${f}">
+        <select id="f_${f}" onchange="customerPicked()">
           <option value="">Pick customer</option>
           ${options.customerList.map(n=>`<option ${cur(f)===n?'selected':''}>${n}</option>`).join("")}
         </select></div>`;
@@ -867,13 +911,11 @@ function openForm(cat, editId){
         </div></div>`;
     }
     if(f==="plate" && cat!=="vehicles"){
-      const plates = plateList(cur(f));
+      const owner = existing ? (existing.customer||"") : "";
+      const plates = plateList(cur(f), owner);
       return `<div class="field"><label>plate</label>
-        <select id="f_plate" onchange="platePicked()">
-          <option value="">Pick car plate</option>
-          ${plates.map(n=>`<option ${cur(f)===n?'selected':''}>${esc(n)}</option>`).join("")}
-        </select>
-        ${plates.length?``:`<div style="font-size:11.5px;color:var(--muted);margin-top:4px">No vehicles yet — add one under Vehicles first</div>`}</div>`;
+        <select id="f_plate" onchange="platePicked()">${plateOptionsHtml(cur(f), owner)}</select>
+        <div id="platehint" style="font-size:11.5px;color:var(--muted);margin-top:4px">${plates.length?``:`No vehicles yet — add one under Vehicles first`}</div></div>`;
     }
     if(f==="items"){
       const rows = parseItems(cur(f));
@@ -925,6 +967,20 @@ function openForm(cat, editId){
     </div>
   `);
 }
+function customerPicked(){
+  const c = document.getElementById("f_customer");
+  const p = document.getElementById("f_plate");
+  if(!c || !p) return;
+  const keep = p.value;
+  p.innerHTML = plateOptionsHtml(keep, c.value);
+  if(p.value !== keep) p.value = "";
+  const hint = document.getElementById("platehint");
+  if(hint){
+    const n = plateList(null, c.value).length;
+    hint.textContent = !n ? (c.value ? "No vehicle registered to this customer yet — add it under Vehicles"
+                                     : "No vehicles yet — add one under Vehicles first") : "";
+  }
+}
 function platePicked(){
   const p = document.getElementById("f_plate");
   const c = document.getElementById("f_customer");
@@ -941,6 +997,40 @@ function submitForm(cat, editId){
   else addRecord(cat, obj);
   closeModal();
 }
+
+/* ---------- Swipe down on any page to refresh ---------- */
+(function pullToRefresh(){
+  const ind = document.getElementById("ptr");
+  let startY = 0, dist = 0, tracking = false, busy = false;
+  const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+  const hide = () => { ind.classList.remove("show"); ind.style.transform = ""; };
+  document.addEventListener("touchstart", e=>{
+    if(busy || !atTop() || e.touches.length !== 1) return;
+    startY = e.touches[0].clientY; dist = 0; tracking = true;
+  }, {passive:true});
+  document.addEventListener("touchmove", e=>{
+    if(!tracking) return;
+    dist = e.touches[0].clientY - startY;
+    if(dist <= 0 || !atTop()){ tracking = false; hide(); return; }
+    const pull = Math.min(dist * 0.5, 56);
+    ind.classList.add("show");
+    ind.style.transform = "translate(-50%," + (pull - 46) + "px)";
+    ind.textContent = dist > 90 ? "↑ Release to refresh" : "↓ Pull to refresh";
+  }, {passive:true});
+  document.addEventListener("touchend", ()=>{
+    if(!tracking){ hide(); return; }
+    tracking = false;
+    if(dist > 90){
+      busy = true;
+      ind.classList.add("show");
+      ind.style.transform = "translate(-50%,0)";
+      ind.textContent = "Refreshing…";
+      Promise.resolve(syncConfigured() ? syncNow(true) : null).then(()=>{
+        if(!syncConfigured()){ render(); toast("Refreshed"); }
+      }).catch(()=>{}).then(()=>{ busy = false; hide(); });
+    } else hide();
+  }, {passive:true});
+})();
 
 /* ---------- init ---------- */
 render();
