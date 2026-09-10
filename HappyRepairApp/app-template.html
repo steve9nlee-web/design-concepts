@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>HappyRepairApp — Workshop Manager</title>
 <meta name="theme-color" content="#0f172a">
-<script src="xlsx.full.min.js"></script>
+<script src="xlsx.bundle.js"></script>
 <script src="jspdf.umd.min.js"></script>
 <style>
   :root{
@@ -408,9 +408,59 @@ function buildWorkbook(){
   });
   return wb;
 }
+/* ---------- Readable document sheets: every line of every document ---------- */
+const XL_STYLE = {
+  head:    {font:{bold:true,sz:12,color:{rgb:"FFFFFF"}}, fill:{patternType:"solid",fgColor:{rgb:"0F172A"}}},
+  sub:     {font:{color:{rgb:"475569"}}},
+  colhead: {font:{bold:true,color:{rgb:"475569"}}, fill:{patternType:"solid",fgColor:{rgb:"F1F5F9"}}},
+  total:   {font:{bold:true}},
+  sep:     {font:{bold:true,color:{rgb:"FFFFFF"}}, fill:{patternType:"solid",fgColor:{rgb:"DC2626"}},
+            alignment:{horizontal:"center"}},
+};
+function styleRow(ws, r, style, cols){
+  for(let c=0;c<cols;c++){
+    const a = XLSX.utils.encode_cell({r, c});
+    if(!ws[a]) ws[a] = {t:"s", v:""};
+    ws[a].s = style;
+  }
+}
+function docSheet(kind, records, totalKey, totalLabel){
+  const rows = [], mark = {head:[],sub:[],colhead:[],total:[],sep:[]};
+  records.slice().reverse().forEach((r, i)=>{
+    if(i){ mark.sep.push(rows.length); rows.push(["NEXT DOCUMENT","","",""]); }
+    mark.head.push(rows.length);
+    rows.push([kind.toUpperCase(), r.quoteNo || r.jobNo || r.invoiceNo || "",
+               String(r.timestamp||"").slice(0,16), r.status||""]);
+    mark.sub.push(rows.length);
+    rows.push(["Customer", r.customer||"", "Plate", r.plate||""]);
+    mark.sub.push(rows.length);
+    rows.push(kind === "quotation" ? ["Valid until", r.validUntil||"", "", ""]
+            : kind === "job sheet" ? ["Mechanic", r.mechanic||"", "Department", r.department||""]
+            : ["Vehicle", r.vehicle||"", "Job no", r.jobNo||""]);
+    mark.colhead.push(rows.length);
+    rows.push(["Description","","","Amount"]);
+    const items = parseItems(r.items);
+    if(items.length) items.forEach(it=>
+      rows.push([it.desc||"", "", "", String(it.amount).trim()==="" ? "" : Number(money(it.amount))]));
+    else rows.push(["(no work lines recorded)","","",""]);
+    mark.total.push(rows.length);
+    rows.push([totalLabel,"","", Number(money(r[totalKey]))]);
+  });
+  if(!rows.length) rows.push(["No " + kind + "s recorded yet","","",""]);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{wch:48},{wch:20},{wch:18},{wch:14}];
+  ws["!merges"] = mark.sep.map(r=>({s:{r,c:0}, e:{r,c:3}}));
+  Object.keys(mark).forEach(k=> mark[k].forEach(r=> styleRow(ws, r, XL_STYLE[k], 4)));
+  return ws;
+}
 function exportExcel(silent){
   if(!PERM.canExport) return;
   const wb = buildWorkbook();
+  /* The flat sheets above stay machine-readable for Import; these add the
+     documents written out in full, ruled in red between one and the next. */
+  XLSX.utils.book_append_sheet(wb, docSheet("quotation", db.quotations||[], "total", "Quotation total"), "Quotations (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("job sheet", db.jobOrders||[], "total", "Job total"), "Job Sheets (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("invoice", db.invoices||[], "amount", "Amount due"), "Invoices (full)");
   if(window.AndroidBridge && AndroidBridge.saveBase64){
     /* Native Android bridge: write straight into the Downloads folder */
     const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
@@ -425,6 +475,9 @@ function exportExcel(silent){
 function shareExcel(){
   if(!PERM.canExport) return;
   const wb = buildWorkbook();
+  XLSX.utils.book_append_sheet(wb, docSheet("quotation", db.quotations||[], "total", "Quotation total"), "Quotations (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("job sheet", db.jobOrders||[], "total", "Job total"), "Job Sheets (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("invoice", db.invoices||[], "amount", "Amount due"), "Invoices (full)");
   if(window.AndroidBridge && AndroidBridge.shareBase64){
     const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
     const ok = AndroidBridge.shareBase64("HappyRepairApp_data.xlsx", b64);
