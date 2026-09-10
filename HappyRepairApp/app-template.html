@@ -97,8 +97,8 @@ const ROLES = {
   },
   mechanic: {
     label: "Mechanic",
-    cats: ["jobOrders","vehicles","inventory","reminders"],
-    readOnly: ["inventory","reminders"],
+    cats: ["jobOrders","quotations","vehicles","invoices","inventory","reminders"],
+    readOnly: ["invoices","inventory","reminders"],
     canDelete: false, canExport: false, canSettings: false, canImport: true,
   },
 };
@@ -110,7 +110,7 @@ const CATS = {
   customers:  {label:"Customers",  icon:"👤", fields:["name","phone","email","address"]},
   vehicles:   {label:"Vehicles",   icon:"🚗", fields:["plate","make","model","year","color","customer"]},
   quotations: {label:"Quotations", icon:"💲", fields:["quoteNo","customer","plate","status","validUntil","tax","notes","total"]},
-  jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","customer","plate","priority","status","mechanic","services","notes"]},
+  jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","customer","plate","priority","status","mechanic","department","services"]},
   invoices:   {label:"Invoices",   icon:"🧾", fields:["invoiceNo","customer","plate","vehicle","amount","status"]},
   inventory:  {label:"Inventory",  icon:"🔩", fields:["name","category","sku","qty","unit","cost","sell","reorderLevel"]},
   reminders:  {label:"Reminders",  icon:"🔔", fields:["customer","phone","plate","dueDate","lastService","status"]},
@@ -122,9 +122,33 @@ function loadDB(){
   catch(e){ return emptyDB(); }
 }
 function emptyDB(){
-  const db = {shop:{name:"HAPPY ENTERPRISE",address:"",phone:"",email:"",tax:0,currency:"MYR"}};
+  const db = {shop:{name:"HAPPY ENTERPRISE",address:"",phone:"",email:"",tax:0,currency:"MYR"}, mechanicNames:[]};
   Object.keys(CATS).forEach(k=>db[k]=[]);
   return db;
+}
+const MECHANIC_SEED = ["Alex","Adrian"];
+function mechanicNames(extra){
+  const set = new Set([...MECHANIC_SEED, ...(db.mechanicNames||[])]);
+  (db.jobOrders||[]).forEach(j=>{ if(j.mechanic) set.add(j.mechanic); });
+  if(extra) set.add(extra);
+  return [...set];
+}
+function addMechanicName(){
+  const n = (prompt("New mechanic name:")||"").trim();
+  if(!n) return;
+  db.mechanicNames = db.mechanicNames || [];
+  if(!db.mechanicNames.includes(n)) db.mechanicNames.push(n);
+  saveDB();
+  const s = document.getElementById("f_mechanic");
+  if(s){
+    if(![...s.options].some(o=>o.value===n)){
+      const o = document.createElement("option");
+      o.textContent = n; o.value = n;
+      s.appendChild(o);
+    }
+    s.value = n;
+  }
+  toast("Added "+n);
 }
 let db = loadDB();
 Object.keys(CATS).forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
@@ -426,8 +450,8 @@ function renderDashboard(main){
       ${ROLE==="mechanic" ? `
       <ol style="color:#334155;line-height:1.8;font-size:14px">
         <li>Open <b>Job Orders</b> to see the jobs assigned to you — tap <b>Edit</b> to update a job's status as you work (In Progress → Ready for Pickup → Completed).</li>
-        <li>Register vehicles you receive in <b>Vehicles</b>.</li>
-        <li><b>Inventory</b> and <b>Reminders</b> are view-only — check part stock and upcoming service dates any time.</li>
+        <li>Issue <b>Quotations</b> for customers and register vehicles you receive in <b>Vehicles</b>.</li>
+        <li><b>Invoices</b>, <b>Inventory</b> and <b>Reminders</b> are view-only — check billing status, part stock and upcoming service dates any time.</li>
         <li>Tap <b>Import from Excel file</b> to load the latest data file the admin shared (e.g. from Google Drive).</li>
       </ol>` : `
       <ol style="color:#334155;line-height:1.8;font-size:14px">
@@ -557,6 +581,18 @@ function openForm(cat, editId){
           ${options.customerList.map(n=>`<option ${cur(f)===n?'selected':''}>${n}</option>`).join("")}
         </select></div>`;
     }
+    if(f==="mechanic" && cat==="jobOrders"){
+      const names = mechanicNames(existing ? existing.mechanic : "");
+      return `<div class="field"><label>mechanic</label>
+        <div style="display:flex;gap:6px;align-items:stretch">
+          <select id="f_mechanic" style="flex:1">
+            <option value="">Pick mechanic</option>
+            ${names.map(n=>`<option ${cur(f)===n?'selected':''}>${n}</option>`).join("")}
+          </select>
+          <button type="button" class="btn-outline btn-sm" onclick="addMechanicName()" style="white-space:nowrap">+ Add name</button>
+        </div></div>`;
+    }
+    if(f==="department") return sel(f,["Repairing","Painting"]);
     if(f==="status" && cat==="quotations") return sel(f,["Draft","Sent","Approved","Declined","Converted"]);
     if(f==="status" && cat==="jobOrders") return sel(f,["Pending","In Progress","Awaiting Parts","Ready for Pickup","Completed","Delivered"]);
     if(f==="status" && cat==="invoices") return sel(f,["Draft","Sent","Paid","Overdue"]);
