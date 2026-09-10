@@ -246,6 +246,14 @@ async function flushOutbox(){
   }
   return outbox().length === 0;
 }
+/* Spreadsheet headers drift in case ("Department" vs "department"), so match
+   column names case-insensitively rather than losing the value. */
+function rowGet(row, field){
+  if(row[field] != null) return row[field];
+  const want = String(field).toLowerCase();
+  for(const k in row){ if(String(k).toLowerCase() === want) return row[k]; }
+  return "";
+}
 async function syncPull(){
   let r;
   try{
@@ -256,16 +264,23 @@ async function syncPull(){
   if(!r.ok) throw new Error("Server refused ("+statusHint(r.status)+")");
   const data = await r.json();
   let touched = false;
+  const reupload = [];
   Object.keys(CATS).forEach(cat=>{
     if(!Array.isArray(data[cat])) return;
-    db[cat] = data[cat].filter(row=>String(row.deleted||"")!=="yes").map(row=>{
-      const o = { id: String(row.ID), timestamp: String(row["Date/Time"]||"") };
-      CATS[cat].fields.forEach(f=> o[f] = row[f] == null ? "" : String(row[f]));
-      return o;
-    });
+    /* Server knows nothing about this category but this device does: keep the
+       local records and upload them instead of wiping them. */
+    if(data[cat].length === 0 && (db[cat]||[]).length > 0){ reupload.push(cat); return; }
+    db[cat] = data[cat]
+      .filter(row=>String(rowGet(row,"deleted")||"").toLowerCase() !== "yes")
+      .map(row=>{
+        const o = { id: String(rowGet(row,"ID")), timestamp: String(rowGet(row,"Date/Time")||"") };
+        CATS[cat].fields.forEach(f=>{ const v = rowGet(row,f); o[f] = v == null ? "" : String(v); });
+        return o;
+      });
     touched = true;
   });
   if(touched) saveDB();
+  reupload.forEach(cat=> (db[cat]||[]).forEach(rec=> pushRecord(cat, rec)));
   return touched;
 }
 async function syncNow(manual){
