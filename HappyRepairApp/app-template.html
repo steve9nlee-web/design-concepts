@@ -503,23 +503,11 @@ function buildDocPdf(kind, rec){
   y += Math.max(14, wrapped.length * 5 + 9);
   doc.setDrawColor(226,232,240); doc.line(L, y, R, y);
 
-  /* Totals — tax percent comes from the record, else the shop setting */
-  const pct = Number(kind === "quotation" ? (rec.tax !== "" && rec.tax != null ? rec.tax : shop.tax)
-                                          : shop.tax) || 0;
-  const sub = Number(money(base));
-  const taxAmt = sub * pct / 100;
+  /* The amount entered is the amount charged — no tax is added on top. */
   y += 8;
-  const rows = [["Subtotal", money(sub)]];
-  if(pct) rows.push(["Tax / GST (" + pct + "%)", money(taxAmt)]);
-  rows.push([kind === "quotation" ? "Quotation total" : "Amount due", money(sub + taxAmt)]);
-  rows.forEach((row, i)=>{
-    const last = i === rows.length - 1;
-    doc.setFont("helvetica", last ? "bold" : "normal");
-    doc.setFontSize(last ? 12 : 10);
-    doc.text(row[0], R - 45, y, {align:"right"});
-    doc.text(shopCurrency() + " " + row[1], R - 3, y, {align:"right"});
-    y += last ? 0 : 6;
-  });
+  doc.setFont("helvetica","bold"); doc.setFontSize(12);
+  doc.text(kind === "quotation" ? "Quotation total" : "Amount due", R - 45, y, {align:"right"});
+  doc.text(shopCurrency() + " " + money(base), R - 3, y, {align:"right"});
 
   /* Footer */
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(120);
