@@ -71,11 +71,11 @@ public class MainActivity extends Activity {
     }
 
     // Saves into Downloads; returns a shareable content Uri on API 29+, null below.
-    private Uri saveToDownloads(String filename, byte[] data) throws Exception {
+    private Uri saveToDownloads(String filename, byte[] data, String mime) throws Exception {
         if (Build.VERSION.SDK_INT >= 29) {
             ContentValues v = new ContentValues();
             v.put(MediaStore.Downloads.DISPLAY_NAME, filename);
-            v.put(MediaStore.Downloads.MIME_TYPE, XLSX_MIME);
+            v.put(MediaStore.Downloads.MIME_TYPE, mime);
             Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
             if (uri == null) throw new Exception("MediaStore insert failed");
             try (OutputStream os = getContentResolver().openOutputStream(uri)) {
@@ -105,7 +105,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean saveBase64(String filename, String base64) {
             try {
-                activity.saveToDownloads(filename, Base64.decode(base64, Base64.DEFAULT));
+                activity.saveToDownloads(filename, Base64.decode(base64, Base64.DEFAULT), XLSX_MIME);
                 return true;
             } catch (Exception e) {
                 return false;
@@ -116,11 +116,18 @@ public class MainActivity extends Activity {
         // can send the file to Google Drive, WhatsApp, email, etc.
         @JavascriptInterface
         public boolean shareBase64(String filename, String base64) {
+            return shareFile(filename, base64, XLSX_MIME);
+        }
+
+        // Saves the file, then offers it to WhatsApp / email / Drive / anything
+        // else that accepts the given type.
+        @JavascriptInterface
+        public boolean shareFile(String filename, String base64, String mime) {
             try {
-                Uri uri = activity.saveToDownloads(filename, Base64.decode(base64, Base64.DEFAULT));
+                Uri uri = activity.saveToDownloads(filename, Base64.decode(base64, Base64.DEFAULT), mime);
                 if (uri == null) return true; // pre-Android-10: saved, no share sheet
                 Intent send = new Intent(Intent.ACTION_SEND);
-                send.setType(XLSX_MIME);
+                send.setType(mime);
                 send.putExtra(Intent.EXTRA_STREAM, uri);
                 send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 Intent chooser = Intent.createChooser(send, "Share " + filename);

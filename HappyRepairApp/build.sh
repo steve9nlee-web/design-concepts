@@ -35,6 +35,7 @@ build_one() {
   # 1. Role-specific web app + bundled offline Excel engine
   sed "s/__ROLE__/$role/" "$HERE/app-template.html" > "$W/assets/index.html"
   cp "$HERE/xlsx.full.min.js" "$W/assets/xlsx.full.min.js"
+  cp "$HERE/jspdf.umd.min.js" "$W/assets/jspdf.umd.min.js"
 
   # 2. Launcher icon
   python3 "$HERE/make_icon.py" "$W/res/mipmap-xxhdpi/ic_launcher.png" "$letter" "$color"
