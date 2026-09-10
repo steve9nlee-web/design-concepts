@@ -10,6 +10,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -24,10 +25,12 @@ import java.io.OutputStream;
 public class MainActivity extends Activity {
 
     private static final int PICK_XLSX = 42;
+    private static final int PICK_IMAGE = 43;
     private static final String XLSX_MIME =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     private WebView webView;
+    private ValueCallback<Uri[]> fileChooserCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,8 +45,9 @@ public class MainActivity extends Activity {
         s.setAllowFileAccessFromFileURLs(true);
         s.setAllowUniversalAccessFromFileURLs(true);
         webView.setWebViewClient(new WebViewClient());
-        // Base WebChromeClient enables the standard confirm()/alert() dialogs
-        webView.setWebChromeClient(new WebChromeClient());
+        // WebChromeClient enables confirm()/alert() and, with onShowFileChooser,
+        // lets <input type="file"> open the picker for the shop logo.
+        webView.setWebChromeClient(new ChromeClient(this));
         webView.addJavascriptInterface(new Bridge(this), "AndroidBridge");
         webView.loadUrl("file:///android_asset/index.html");
         setContentView(webView);
@@ -52,6 +56,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_IMAGE) {
+            if (fileChooserCallback != null) {
+                // Always answer, even on cancel, or the file input stays stuck.
+                fileChooserCallback.onReceiveValue(resultCode == RESULT_OK
+                    ? WebChromeClient.FileChooserParams.parseResult(resultCode, data) : null);
+                fileChooserCallback = null;
+            }
+            return;
+        }
         if (requestCode != PICK_XLSX || resultCode != RESULT_OK
                 || data == null || data.getData() == null) {
             return;
@@ -89,6 +102,30 @@ public class MainActivity extends Activity {
             fos.write(data);
         }
         return null;
+    }
+
+    static class ChromeClient extends WebChromeClient {
+        private final MainActivity activity;
+
+        ChromeClient(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @Override
+        public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> cb,
+                                         FileChooserParams params) {
+            if (activity.fileChooserCallback != null) {
+                activity.fileChooserCallback.onReceiveValue(null);
+            }
+            activity.fileChooserCallback = cb;
+            try {
+                activity.startActivityForResult(params.createIntent(), PICK_IMAGE);
+                return true;
+            } catch (Exception e) {
+                activity.fileChooserCallback = null;
+                return false;
+            }
+        }
     }
 
     // Keep this a *static* nested class: javac 21 emits a null-named

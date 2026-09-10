@@ -63,6 +63,8 @@
   .pill.wait{background:#fef3c7;color:#92400e;}
   .sec-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
   .sec-head h3{margin:0;font-size:16px;}
+  .logobox{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;display:inline-block;}
+  .logobox img{max-width:220px;max-height:90px;display:block;}
   .sec-head .count{background:#eef2ff;color:#3730a3;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700;}
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
   .search{flex:1;min-width:200px;}
@@ -550,6 +552,64 @@ function money(n){
   const v = Number(String(n).replace(/[^0-9.\-]/g,"")) || 0;
   return v.toFixed(2);
 }
+function pickLogo(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    const img = new Image();
+    img.onload = ()=>{
+      /* Shrink before storing: a phone photo would otherwise fill the
+         device's storage and bloat every PDF. */
+      const scale = Math.min(1, 600/img.width, 300/img.height);
+      const w = Math.max(1, Math.round(img.width*scale));
+      const h = Math.max(1, Math.round(img.height*scale));
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      let data = cv.toDataURL("image/png");          /* keeps transparency */
+      if(data.length > 300000){                       /* photo-like: flatten */
+        const cv2 = document.createElement("canvas");
+        cv2.width = w; cv2.height = h;
+        const c2 = cv2.getContext("2d");
+        c2.fillStyle = "#fff"; c2.fillRect(0,0,w,h);
+        c2.drawImage(img, 0, 0, w, h);
+        data = cv2.toDataURL("image/jpeg", 0.85);
+      }
+      db.shop = db.shop || {};
+      db.shop.logo = data; db.shop.logoW = w; db.shop.logoH = h;
+      saveDB(); toast("Logo saved — it will appear on your documents"); render();
+    };
+    img.onerror = ()=> toast("That file is not an image");
+    img.src = fr.result;
+  };
+  fr.onerror = ()=> toast("Could not read that file");
+  fr.readAsDataURL(file);
+}
+function removeLogo(){
+  if(!db.shop) return;
+  delete db.shop.logo; delete db.shop.logoW; delete db.shop.logoH;
+  saveDB(); toast("Logo removed"); render();
+}
+function logoCard(){
+  const shop = db.shop || {};
+  return `
+    <div class="card" style="max-width:520px;margin-top:16px">
+      <h3 style="margin-top:0">🖼 Shop logo</h3>
+      <p class="sub" style="margin-top:0">Printed on every quotation and invoice PDF.</p>
+      ${shop.logo ? `<div class="logobox"><img src="${shop.logo}" alt="Shop logo"></div>` : ``}
+      <div class="row" style="margin-top:10px">
+        <label class="btn-dark" style="display:inline-block;margin:0;padding:10px 16px;border-radius:9px;color:#fff">
+          ${shop.logo ? "Replace logo" : "Upload logo"}
+          <input type="file" accept="image/*" style="display:none" onchange="pickLogo(this)">
+        </label>
+        ${shop.logo ? `<button class="btn-danger btn-sm" onclick="removeLogo()">Remove</button>` : ``}
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px">
+        PNG with a transparent background works best. Stored on this device — upload it on each tablet.
+      </div>
+    </div>`;
+}
 function shopCurrency(){ return (db.shop && db.shop.currency) || "MYR"; }
 
 function buildDocPdf(kind, rec){
@@ -560,12 +620,22 @@ function buildDocPdf(kind, rec){
   let y = 20;
 
   /* Letterhead */
+  let tx = L;
+  if(shop.logo){
+    const maxW = 36, maxH = 16;
+    const nw = Number(shop.logoW) || maxW, nh = Number(shop.logoH) || maxH;
+    const k = Math.min(maxW/nw, maxH/nh);
+    try{
+      doc.addImage(shop.logo, L, y - 6, nw*k, nh*k);
+      tx = L + nw*k + 5;
+    }catch(e){ /* unreadable logo: fall back to a text-only letterhead */ }
+  }
   doc.setFont("helvetica","bold"); doc.setFontSize(17);
-  doc.text(String(shop.name || "HAPPY ENTERPRISE"), L, y);
+  doc.text(String(shop.name || "HAPPY ENTERPRISE"), tx, y);
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90);
   const lines = [shop.address, [shop.phone, shop.email].filter(Boolean).join("  ·  ")]
     .filter(Boolean).join("\n").split("\n").filter(Boolean);
-  lines.forEach((t,i)=> doc.text(String(t), L, y + 6 + i*4.5));
+  lines.forEach((t,i)=> doc.text(String(t), tx, y + 6 + i*4.5));
 
   /* Document title + number */
   doc.setTextColor(15,23,42); doc.setFont("helvetica","bold"); doc.setFontSize(20);
@@ -825,6 +895,7 @@ function renderSettings(main){
       </div>
       <button class="btn-dark" onclick="saveSettings()">Save</button>
     </div>
+    ${logoCard()}
     ${syncCard()}
   `;
 }
@@ -846,6 +917,7 @@ function renderSyncSettings(main){
     <h1>Sync settings</h1>
     <p class="sub">Enter the same server URL and key as the admin app.</p>
     ${syncCard()}
+    ${logoCard()}
   `;
 }
 function saveSyncSettings(){
@@ -858,10 +930,10 @@ function saveSyncSettings(){
   syncNow(true);
 }
 function saveSettings(){
-  db.shop = {
+  db.shop = Object.assign({}, db.shop, {
     name:val('s_name'), address:val('s_addr'), phone:val('s_phone'),
     email:val('s_email'), tax:val('s_tax'), currency:val('s_curr')
-  };
+  });
   saveDB(); toast("Settings saved"); render();
 }
 function val(id){ return document.getElementById(id).value; }
