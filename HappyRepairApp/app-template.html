@@ -14,8 +14,9 @@
     --radius:14px;
   }
   *{box-sizing:border-box;}
+  html,body{overflow-x:hidden;}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--paper);color:var(--text);}
-  .app{display:flex;min-height:100vh;}
+  .app{display:flex;min-height:100vh;max-width:100%;}
   .sidebar{width:220px;background:var(--navy);color:#cbd5e1;flex-shrink:0;padding:18px 12px;}
   .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;padding:6px 8px 20px;}
   .brand .logo{width:34px;height:34px;border-radius:9px;background:#fff;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:18px;}
@@ -25,7 +26,8 @@
   .navitem.active{background:#2563eb;color:#fff;}
   .rolebadge{display:inline-block;margin-top:3px;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:#2563eb;color:#fff;}
   .rolebadge.mechanic{background:#d97706;}
-  .main{flex:1;padding:22px 26px 60px;max-width:1100px;}
+  .main{flex:1;min-width:0;padding:22px 26px 60px;max-width:1100px;}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   h1{font-size:26px;margin:2px 0 2px;}
   .sub{color:var(--muted);margin:0 0 18px;font-size:14px;}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
@@ -36,7 +38,6 @@
   .card.tap{cursor:pointer;transition:transform .08s ease,border-color .15s,box-shadow .15s;}
   .card.tap:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(37,99,235,.14);}
   .card.tap:active{transform:scale(.97);}
-  .tap-hint{font-size:11.5px;color:var(--accent);margin-top:2px;font-weight:600;}
   input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;width:100%;}
   textarea{min-height:60px;resize:vertical;}
   label{font-size:12.5px;font-weight:600;color:#334155;display:block;margin-bottom:5px;}
@@ -71,6 +72,18 @@
   .switch{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
   .readonly-note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
   @media(max-width:760px){
+    /* A 10-column table cannot fit a phone, so each record becomes a card. */
+    .tablewrap{overflow-x:visible;}
+    table,thead,tbody,tr,td{display:block;width:100%;}
+    thead{display:none;}
+    tbody tr{border:1px solid var(--line);border-radius:12px;padding:10px 12px 12px;margin-bottom:10px;}
+    tbody td{border:none;padding:4px 0;display:flex;gap:12px;align-items:baseline;justify-content:space-between;font-size:14px;}
+    tbody td::before{content:attr(data-label);color:var(--muted);font-weight:600;font-size:12px;flex:0 0 38%;}
+    tbody td.blank-cell{display:none;}
+    tbody td.key-cell{font-size:18px;font-weight:700;padding-bottom:6px;}
+    tbody td.key-cell::before{font-size:12px;font-weight:600;}
+    tbody td.row-actions{justify-content:flex-end;gap:8px;padding-top:10px;margin-top:6px;border-top:1px solid var(--line);}
+    tbody td.row-actions::before{content:"";flex:0;}
     .app{flex-direction:column;}
     .sidebar{width:100%;display:flex;overflow-x:auto;gap:4px;padding:10px;}
     .brand{display:none;}
@@ -470,7 +483,7 @@ function renderDashboard(main){
     <p class="sub">Signed in as ${PERM.label} · data stored on this device</p>
     <div class="grid4">
       ${Object.entries(CATS).filter(([k])=>PERM.cats.includes(k)).map(([k,v])=>`
-        <div class="card tap" onclick="nav('${k}')"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div><div class="tap-hint">Tap to open ›</div></div>
+        <div class="card tap" onclick="nav('${k}')"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div></div>
       `).join("")}
     </div>
     <div class="exportbar">
@@ -569,6 +582,11 @@ function renderCategory(main, cat){
   const meta = CATS[cat];
   const records = db[cat];
   const writable = canWrite(cat);
+  /* The plate is how staff recognise a record at a glance, so it sits right
+     after the date/time instead of buried mid-row. */
+  const cols = meta.fields.slice();
+  const pi = cols.indexOf("plate");
+  if(pi > 0) cols.unshift(cols.splice(pi,1)[0]);
   main.innerHTML = `
     <div class="toolbar">
       <div>
@@ -580,21 +598,25 @@ function renderCategory(main, cat){
     ${!writable ? `<div class="readonly-note">👁 View-only — ask the admin to make changes here.</div>` : ``}
     <div class="card">
       ${records.length===0 ? `<div class="empty">No ${meta.label.toLowerCase()} yet.${writable ? ' Click "+ New" to add one.' : ''}</div>` : `
-      <table>
-        <thead><tr><th>Date/Time</th>${meta.fields.map(f=>`<th>${f}</th>`).join("")}${writable||PERM.canDelete?`<th></th>`:``}</tr></thead>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Date/Time</th>${cols.map(f=>`<th>${f}</th>`).join("")}${writable||PERM.canDelete?`<th></th>`:``}</tr></thead>
         <tbody>
           ${records.slice().reverse().map(r=>`
             <tr>
-              <td>${r.timestamp}</td>
-              ${meta.fields.map(f=>`<td>${r[f]??""}</td>`).join("")}
-              ${writable||PERM.canDelete?`<td style="white-space:nowrap">
+              <td data-label="Date/Time">${r.timestamp}</td>
+              ${cols.map(f=>{
+                const v = r[f] ?? "";
+                const cls = (v===""?"blank-cell":"") + (f==="plate"?" key-cell":"");
+                return `<td data-label="${f}" class="${cls.trim()}">${v}</td>`;
+              }).join("")}
+              ${writable||PERM.canDelete?`<td class="row-actions" style="white-space:nowrap">
                 ${writable?`<button class="btn-outline btn-sm" onclick="openForm('${cat}','${r.id}')">Edit</button>`:``}
                 ${PERM.canDelete?`<button class="btn-danger btn-sm" onclick="deleteRecord('${cat}','${r.id}')">Delete</button>`:``}
               </td>`:``}
             </tr>
           `).join("")}
         </tbody>
-      </table>`}
+      </table></div>`}
     </div>
   `;
 }
