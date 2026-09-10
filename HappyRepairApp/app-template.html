@@ -63,6 +63,18 @@
   .pill.wait{background:#fef3c7;color:#92400e;}
   .sec-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
   .sec-head h3{margin:0;font-size:16px;}
+  .doc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;}
+  .doc-no{font-size:16px;font-weight:700;}
+  .doc-meta{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .doc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;}
+  .doc-line{display:flex;justify-content:space-between;gap:14px;padding:5px 0;font-size:14px;border-bottom:1px dashed var(--line);}
+  .doc-line b{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .doc-line.doc-empty span{color:var(--muted);font-style:italic;}
+  .doc-total{display:flex;justify-content:space-between;gap:14px;padding-top:8px;margin-top:2px;font-size:15px;font-weight:700;}
+  .doc-total span{color:var(--muted);font-weight:600;}
+  .docsep{border-top:2px solid var(--red);margin:20px 0 14px;text-align:center;}
+  .docsep span{display:inline-block;transform:translateY(-9px);background:var(--card);color:var(--red);
+               font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:0 10px;}
   .logobox{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;display:inline-block;}
   .logobox img{max-width:220px;max-height:90px;display:block;}
   .sec-head .count{background:#eef2ff;color:#3730a3;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700;}
@@ -832,7 +844,7 @@ function renderSidebar(){
     <div class="navlabel">Admin</div>
     <div class="navitem ${currentView==='settings'?'active':''}" onclick="nav('settings')">⚙️ Settings</div>` : `
     <div class="navlabel">Setup</div>
-    <div class="navitem ${currentView==='sync'?'active':''}" onclick="nav('sync')">🔄 Sync settings</div>`}
+    <div class="navitem ${currentView==='sync'?'active':''}" onclick="nav('sync')">⚙️ Setup</div>`}
   `;
 }
 
@@ -877,24 +889,27 @@ function renderDashboard(main){
   `;
 }
 
+function shopCard(){
+  const s = db.shop || {};
+  return `
+    <div class="card" style="max-width:520px">
+      <h3 style="margin-top:0">🏢 Shop details</h3>
+      <p class="sub" style="margin-top:0">Printed at the top of every quotation and invoice.</p>
+      <div class="field"><label>Shop name</label><input id="s_name" value="${esc(s.name)}"></div>
+      <div class="field"><label>Address</label><textarea id="s_addr">${esc(s.address)}</textarea></div>
+      <div class="field-grid">
+        <div class="field"><label>Phone</label><input id="s_phone" value="${esc(s.phone)}"></div>
+        <div class="field"><label>Email</label><input id="s_email" value="${esc(s.email)}"></div>
+      </div>
+      <div class="field"><label>Currency</label><input id="s_curr" value="${esc(s.currency||'MYR')}"></div>
+      <button class="btn-dark" onclick="saveSettings()">Save shop details</button>
+    </div>`;
+}
 function renderSettings(main){
-  const s = db.shop;
   main.innerHTML = `
     <h1>Settings</h1>
     <p class="sub">Configure your shop info.</p>
-    <div class="card" style="max-width:520px">
-      <div class="field"><label>Shop name</label><input id="s_name" value="${s.name||''}"></div>
-      <div class="field"><label>Address</label><textarea id="s_addr">${s.address||''}</textarea></div>
-      <div class="field-grid">
-        <div class="field"><label>Phone</label><input id="s_phone" value="${s.phone||''}"></div>
-        <div class="field"><label>Email</label><input id="s_email" value="${s.email||''}"></div>
-      </div>
-      <div class="field-grid">
-        <div class="field"><label>Tax / GST %</label><input id="s_tax" type="number" value="${s.tax||0}"></div>
-        <div class="field"><label>Currency</label><input id="s_curr" value="${s.currency||'MYR'}"></div>
-      </div>
-      <button class="btn-dark" onclick="saveSettings()">Save</button>
-    </div>
+    ${shopCard()}
     ${logoCard()}
     ${syncCard()}
   `;
@@ -914,10 +929,11 @@ function syncCard(){
 }
 function renderSyncSettings(main){
   main.innerHTML = `
-    <h1>Sync settings</h1>
-    <p class="sub">Enter the same server URL and key as the admin app.</p>
-    ${syncCard()}
+    <h1>Setup</h1>
+    <p class="sub">Enter the same shop details, logo and sync key as the admin app so your documents match.</p>
+    ${shopCard()}
     ${logoCard()}
+    ${syncCard()}
   `;
 }
 function saveSyncSettings(){
@@ -932,7 +948,7 @@ function saveSyncSettings(){
 function saveSettings(){
   db.shop = Object.assign({}, db.shop, {
     name:val('s_name'), address:val('s_addr'), phone:val('s_phone'),
-    email:val('s_email'), tax:val('s_tax'), currency:val('s_curr')
+    email:val('s_email'), currency:val('s_curr')
   });
   saveDB(); toast("Settings saved"); render();
 }
@@ -972,6 +988,33 @@ function applySearch(v){
   listQuery = v;
   const box = document.getElementById("rowsbox");
   if(box) box.innerHTML = rowsHtml();
+}
+
+/* ---------- One document, printed in full ---------- */
+function docBlock(o){
+  const items = parseItems(o.items);
+  const cur = shopCurrency();
+  return `
+    <div class="doc">
+      <div class="doc-head">
+        <div>
+          <div class="doc-no">${esc(o.no || "—")}</div>
+          <div class="doc-meta">${[String(o.date||"").slice(0,10), ...(o.meta||[])].filter(Boolean).map(esc).join(" · ")}</div>
+        </div>
+        <div class="doc-right">
+          ${statusPill(o.status)}
+          ${o.pdf ? `<button class="btn-send btn-sm" onclick="${o.pdf}">📄 PDF</button>` : ``}
+        </div>
+      </div>
+      ${items.length ? items.map(i=>`
+        <div class="doc-line"><span>${esc(i.desc || "—")}</span><b>${String(i.amount).trim()!=="" ? money(i.amount) : ""}</b></div>
+      `).join("") : `<div class="doc-line doc-empty"><span>No work lines recorded</span><b></b></div>`}
+      <div class="doc-total"><span>${esc(o.totalLabel)}</span><b>${cur} ${money(o.total)}</b></div>
+    </div>`;
+}
+/* A red rule marks where one document ends and the next begins. */
+function joinDocs(blocks){
+  return blocks.join(`<div class="docsep"><span>next document</span></div>`);
 }
 
 /* ---------- Customer profile: everything about one customer on one page ---------- */
@@ -1030,44 +1073,29 @@ function renderCustomerProfile(main, id){
         }).join("")}</tbody>
       </table></div>` : none("No vehicles registered for this customer yet."))}
 
-    ${section("🔧 Service history", jobs.length, jobs.length ? `
-      <div class="tablewrap"><table>
-        <thead><tr><th>date</th><th>job no</th><th>plate</th><th>work</th><th>mechanic</th><th>status</th></tr></thead>
-        <tbody>${jobs.map(j=>`<tr>
-          <td data-label="date">${esc(String(j.timestamp||"").slice(0,10))}</td>
-          <td data-label="job no" class="key-cell">${esc(j.jobNo||"—")}</td>
-          <td data-label="plate">${esc(j.plate||"—")}</td>
-          <td data-label="work">${parseItems(j.items).map(i=>esc(i.desc)).join("<br>") || "—"}</td>
-          <td data-label="mechanic">${esc(j.mechanic||"—")}</td>
-          <td data-label="status">${statusPill(j.status)}</td>
-        </tr>`).join("")}</tbody>
-      </table></div>` : none("No jobs recorded for this customer yet."))}
+    ${section("🔧 Service history", jobs.length, jobs.length
+      ? joinDocs(jobs.map(j=>docBlock({
+          no: j.jobNo, date: j.timestamp, status: j.status, items: j.items,
+          meta: [j.plate, j.mechanic ? "Mechanic: " + j.mechanic : "", j.department,
+                 j.quoteNo ? "From " + j.quoteNo : ""],
+          totalLabel: "Job total", total: j.total })))
+      : none("No jobs recorded for this customer yet."))}
 
-    ${section("💲 Quotations", quotes.length, quotes.length ? `
-      <div class="tablewrap"><table>
-        <thead><tr><th>date</th><th>quote no</th><th>plate</th><th>total</th><th>status</th><th></th></tr></thead>
-        <tbody>${quotes.map(q=>`<tr>
-          <td data-label="date">${esc(String(q.timestamp||"").slice(0,10))}</td>
-          <td data-label="quote no" class="key-cell">${esc(q.quoteNo||"—")}</td>
-          <td data-label="plate">${esc(q.plate||"—")}</td>
-          <td data-label="total">${cur} ${money2(q.total)}</td>
-          <td data-label="status">${statusPill(q.status)}</td>
-          <td class="row-actions"><button class="btn-send btn-sm" onclick="sharePdf('quotations','${q.id}')">📄 PDF</button></td>
-        </tr>`).join("")}</tbody>
-      </table></div>` : none("No quotations issued to this customer yet."))}
+    ${section("💲 Quotations", quotes.length, quotes.length
+      ? joinDocs(quotes.map(q=>docBlock({
+          no: q.quoteNo, date: q.timestamp, status: q.status, items: q.items,
+          meta: [q.plate, q.validUntil ? "Valid until " + q.validUntil : ""],
+          totalLabel: "Quotation total", total: q.total,
+          pdf: `sharePdf('quotations','${q.id}')` })))
+      : none("No quotations issued to this customer yet."))}
 
-    ${section("🧾 Invoices", invoices.length, invoices.length ? `
-      <div class="tablewrap"><table>
-        <thead><tr><th>date</th><th>invoice no</th><th>plate</th><th>amount</th><th>payment</th><th></th></tr></thead>
-        <tbody>${invoices.map(i=>`<tr>
-          <td data-label="date">${esc(String(i.timestamp||"").slice(0,10))}</td>
-          <td data-label="invoice no" class="key-cell">${esc(i.invoiceNo||"—")}</td>
-          <td data-label="plate">${esc(i.plate||"—")}</td>
-          <td data-label="amount">${cur} ${money2(i.amount)}</td>
-          <td data-label="payment">${statusPill(i.status)}</td>
-          <td class="row-actions"><button class="btn-send btn-sm" onclick="sharePdf('invoices','${i.id}')">📄 PDF</button></td>
-        </tr>`).join("")}</tbody>
-      </table></div>` : none("No invoices issued to this customer yet."))}
+    ${section("🧾 Invoices", invoices.length, invoices.length
+      ? joinDocs(invoices.map(i=>docBlock({
+          no: i.invoiceNo, date: i.timestamp, status: i.status, items: i.items,
+          meta: [i.plate, i.vehicle, i.jobNo ? "Job " + i.jobNo : ""],
+          totalLabel: "Amount", total: i.amount,
+          pdf: `sharePdf('invoices','${i.id}')` })))
+      : none("No invoices issued to this customer yet."))}
   `;
 }
 
