@@ -57,10 +57,13 @@
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   th{text-align:left;color:var(--muted);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--line);font-size:12.5px;}
   td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
-  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#eef2ff;color:#3730a3;}
-  .pill.urgent{background:#fee2e2;color:#991b1b;}
-  .pill.low{background:#fee2e2;color:#991b1b;}
-  .pill.paid{background:#0f172a;color:#fff;}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#eef2ff;color:#3730a3;white-space:nowrap;}
+  .pill.ok{background:#dcfce7;color:#166534;}
+  .pill.bad{background:#fee2e2;color:#991b1b;}
+  .pill.wait{background:#fef3c7;color:#92400e;}
+  .sec-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .sec-head h3{margin:0;font-size:16px;}
+  .sec-head .count{background:#eef2ff;color:#3730a3;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700;}
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
   .search{flex:1;min-width:200px;}
   .modalbg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:50;}
@@ -135,7 +138,7 @@ function canWrite(cat){ return PERM.cats.includes(cat) && !PERM.readOnly.include
 /* ---------- Data layer ---------- */
 const CATS = {
   customers:  {label:"Customers",  icon:"👤", fields:["name","phone","email","address"]},
-  vehicles:   {label:"Vehicles",   icon:"🚗", fields:["plate","make","model","year","color","customer"]},
+  vehicles:   {label:"Vehicles",   icon:"🚗", fields:["plate","make","model","year","color","customer","lastService","mileage","intervalMonths","intervalKm"]},
   quotations: {label:"Quotations", icon:"💲", fields:["quoteNo","customer","plate","status","validUntil","items","total"]},
   jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","quoteNo","customer","plate","priority","status","mechanic","department","items","total"]},
   invoices:   {label:"Invoices",   icon:"🧾", fields:["invoiceNo","jobNo","customer","plate","vehicle","items","amount","status"]},
@@ -450,6 +453,40 @@ window.onExcelImport = function(b64){
 };
 window.onExcelImportError = function(){ toast("Could not open that file"); };
 
+/* ---------- Status colours: green when settled, red when lost or overdue ---------- */
+const STATUS_OK   = ["approved","converted","paid","completed","delivered"];
+const STATUS_BAD  = ["declined","overdue","cancelled"];
+function statusPill(status){
+  const v = String(status||"").trim();
+  if(!v) return "";
+  const l = v.toLowerCase();
+  const cls = STATUS_OK.includes(l) ? "ok" : STATUS_BAD.includes(l) ? "bad" : "wait";
+  return `<span class="pill ${cls}">${esc(v)}</span>`;
+}
+
+/* ---------- When is this vehicle next due? ---------- */
+function addMonths(dateStr, months){
+  const d = new Date(dateStr);
+  if(isNaN(d.getTime()) || !months) return null;
+  d.setMonth(d.getMonth() + Number(months));
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function serviceDue(v){
+  const out = {};
+  const due = addMonths(v.lastService, v.intervalMonths);
+  if(due){
+    out.date = due;
+    const days = Math.round((new Date(due) - new Date()) / 86400000);
+    out.days = days;
+    out.state = days < 0 ? "bad" : days <= 30 ? "wait" : "ok";
+  }
+  const km = Number(String(v.mileage||"").replace(/[^0-9.]/g,""));
+  const iv = Number(String(v.intervalKm||"").replace(/[^0-9.]/g,""));
+  if(km && iv) out.km = Math.round(km + iv);
+  return out;
+}
+
 /* ---------- Work lines: one per line, stored as "description | amount" ---------- */
 function parseItems(text){
   return String(text||"").split("\n").map(l=>l.trim()).filter(Boolean).map(line=>{
@@ -697,7 +734,7 @@ document.getElementById("modalbg").addEventListener("click",e=>{ if(e.target.id=
 
 /* ---------- Router / render ---------- */
 let currentView = "dashboard";
-function nav(view){ currentView = view; render(); }
+function nav(view){ currentView = view; listQuery = ""; render(); }
 
 function render(){
   renderSidebar();
@@ -706,6 +743,7 @@ function render(){
   if(currentView==="dashboard"){ renderDashboard(main); setSyncStatus(); return; }
   if(currentView==="settings" && PERM.canSettings) return renderSettings(main);
   if(currentView==="sync") return renderSyncSettings(main);
+  if(String(currentView).indexOf("customer:") === 0) return renderCustomerProfile(main, currentView.slice(9));
   if(!PERM.cats.includes(currentView)){ currentView="dashboard"; return renderDashboard(main); }
   renderCategory(main, currentView);
 }
@@ -829,6 +867,138 @@ function saveSettings(){
 function val(id){ return document.getElementById(id).value; }
 
 /* ---------- Generic category list + form ---------- */
+let listQuery = "", listCtx = null;
+function recordMatches(r, q){
+  if(!q) return true;
+  const hay = [r.timestamp, ...Object.values(r)].join(" ").toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(t=>hay.includes(t));
+}
+function rowsHtml(){
+  const {cat, cols, writable, canPdf} = listCtx;
+  const rows = db[cat].filter(r=>recordMatches(r, listQuery)).reverse();
+  if(!rows.length) return `<tr><td colspan="99" class="empty">No matches for “${esc(listQuery)}”.</td></tr>`;
+  return rows.map(r=>`
+    <tr>
+      <td data-label="Date/Time">${esc(r.timestamp)}</td>
+      ${cols.map(f=>{
+        const v = r[f] ?? "";
+        const cls = (v===""?"blank-cell":"") + (f==="plate"?" key-cell":"");
+        const shown = f==="status" ? statusPill(v)
+                    : f==="items" ? esc(v).replace(/\n/g,"<br>")
+                    : esc(v);
+        return `<td data-label="${f}" class="${cls.trim()}">${shown}</td>`;
+      }).join("")}
+      ${writable||PERM.canDelete||canPdf?`<td class="row-actions" style="white-space:nowrap">
+        ${cat==="customers"?`<button class="btn-send btn-sm" onclick="nav('customer:${r.id}')">📋 Profile</button>`:``}
+        ${canPdf?`<button class="btn-send btn-sm" onclick="sharePdf('${cat}','${r.id}')">📄 Send PDF</button>`:``}
+        ${writable?`<button class="btn-outline btn-sm" onclick="openForm('${cat}','${r.id}')">Edit</button>`:``}
+        ${PERM.canDelete?`<button class="btn-danger btn-sm" onclick="deleteRecord('${cat}','${r.id}')">Delete</button>`:``}
+      </td>`:``}
+    </tr>`).join("");
+}
+function applySearch(v){
+  listQuery = v;
+  const box = document.getElementById("rowsbox");
+  if(box) box.innerHTML = rowsHtml();
+}
+
+/* ---------- Customer profile: everything about one customer on one page ---------- */
+function renderCustomerProfile(main, id){
+  const c = (db.customers||[]).find(x=>x.id===id);
+  if(!c){ nav("customers"); return; }
+  const mine = arr => (arr||[]).filter(r=>String(r.customer||"").trim() === String(c.name||"").trim());
+  const vehicles = mine(db.vehicles);
+  const quotes = mine(db.quotations).slice().reverse();
+  const jobs = mine(db.jobOrders).slice().reverse();
+  const invoices = mine(db.invoices).slice().reverse();
+  const money2 = n => Number(String(n||"").replace(/[^0-9.\-]/g,"")||0).toFixed(2);
+  const cur = shopCurrency();
+  const billed = invoices.reduce((s,i)=>s + Number(money2(i.amount)), 0);
+  const unpaid = invoices.filter(i=>!STATUS_OK.includes(String(i.status||"").toLowerCase()))
+                         .reduce((s,i)=>s + Number(money2(i.amount)), 0);
+
+  const section = (title, count, body) => `
+    <div class="card" style="margin-bottom:14px">
+      <div class="sec-head"><h3>${title}</h3><span class="count">${count}</span></div>
+      ${body}
+    </div>`;
+  const none = t => `<div class="empty">${t}</div>`;
+
+  main.innerHTML = `
+    <button class="btn-outline btn-sm" style="margin-bottom:12px" onclick="nav('customers')">‹ Back to customers</button>
+    <h1 style="margin-bottom:2px">${esc(c.name)}</h1>
+    <p class="sub" style="margin:0 0 16px">
+      ${[c.phone, c.email, c.address].filter(Boolean).map(esc).join(" · ") || "No contact details yet"}
+    </p>
+
+    <div class="grid4">
+      <div class="card"><div class="stat-label">Vehicles</div><div class="stat">${vehicles.length}</div></div>
+      <div class="card"><div class="stat-label">Jobs done</div><div class="stat">${jobs.filter(j=>STATUS_OK.includes(String(j.status||"").toLowerCase())).length}</div></div>
+      <div class="card"><div class="stat-label">Total billed</div><div class="stat" style="font-size:20px">${cur} ${money2(billed)}</div></div>
+      <div class="card"><div class="stat-label">Outstanding</div><div class="stat" style="font-size:20px;color:${unpaid>0?'var(--red)':'var(--green)'}">${cur} ${money2(unpaid)}</div></div>
+    </div>
+
+    ${section("🚗 Vehicles", vehicles.length, vehicles.length ? `
+      <div class="tablewrap"><table>
+        <thead><tr><th>plate</th><th>vehicle</th><th>last service</th><th>mileage</th><th>interval</th><th>next due</th></tr></thead>
+        <tbody>${vehicles.map(v=>{
+          const d = serviceDue(v);
+          const iv = [v.intervalMonths?v.intervalMonths+" mth":"", v.intervalKm?Number(v.intervalKm).toLocaleString()+" km":""].filter(Boolean).join(" / ");
+          const next = d.date
+            ? `<span class="pill ${d.state}">${esc(d.date)}${d.days<0?` · ${Math.abs(d.days)}d overdue`:d.days<=30?` · in ${d.days}d`:``}</span>`
+            : (d.km ? `at ${d.km.toLocaleString()} km` : "—");
+          return `<tr>
+            <td data-label="plate" class="key-cell">${esc(v.plate)}</td>
+            <td data-label="vehicle">${esc([v.make,v.model,v.year].filter(Boolean).join(" "))}</td>
+            <td data-label="last service">${esc(v.lastService||"—")}</td>
+            <td data-label="mileage">${v.mileage?esc(Number(v.mileage).toLocaleString())+" km":"—"}</td>
+            <td data-label="interval">${esc(iv||"—")}</td>
+            <td data-label="next due">${next}</td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table></div>` : none("No vehicles registered for this customer yet."))}
+
+    ${section("🔧 Service history", jobs.length, jobs.length ? `
+      <div class="tablewrap"><table>
+        <thead><tr><th>date</th><th>job no</th><th>plate</th><th>work</th><th>mechanic</th><th>status</th></tr></thead>
+        <tbody>${jobs.map(j=>`<tr>
+          <td data-label="date">${esc(String(j.timestamp||"").slice(0,10))}</td>
+          <td data-label="job no" class="key-cell">${esc(j.jobNo||"—")}</td>
+          <td data-label="plate">${esc(j.plate||"—")}</td>
+          <td data-label="work">${parseItems(j.items).map(i=>esc(i.desc)).join("<br>") || "—"}</td>
+          <td data-label="mechanic">${esc(j.mechanic||"—")}</td>
+          <td data-label="status">${statusPill(j.status)}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : none("No jobs recorded for this customer yet."))}
+
+    ${section("💲 Quotations", quotes.length, quotes.length ? `
+      <div class="tablewrap"><table>
+        <thead><tr><th>date</th><th>quote no</th><th>plate</th><th>total</th><th>status</th><th></th></tr></thead>
+        <tbody>${quotes.map(q=>`<tr>
+          <td data-label="date">${esc(String(q.timestamp||"").slice(0,10))}</td>
+          <td data-label="quote no" class="key-cell">${esc(q.quoteNo||"—")}</td>
+          <td data-label="plate">${esc(q.plate||"—")}</td>
+          <td data-label="total">${cur} ${money2(q.total)}</td>
+          <td data-label="status">${statusPill(q.status)}</td>
+          <td class="row-actions"><button class="btn-send btn-sm" onclick="sharePdf('quotations','${q.id}')">📄 PDF</button></td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : none("No quotations issued to this customer yet."))}
+
+    ${section("🧾 Invoices", invoices.length, invoices.length ? `
+      <div class="tablewrap"><table>
+        <thead><tr><th>date</th><th>invoice no</th><th>plate</th><th>amount</th><th>payment</th><th></th></tr></thead>
+        <tbody>${invoices.map(i=>`<tr>
+          <td data-label="date">${esc(String(i.timestamp||"").slice(0,10))}</td>
+          <td data-label="invoice no" class="key-cell">${esc(i.invoiceNo||"—")}</td>
+          <td data-label="plate">${esc(i.plate||"—")}</td>
+          <td data-label="amount">${cur} ${money2(i.amount)}</td>
+          <td data-label="payment">${statusPill(i.status)}</td>
+          <td class="row-actions"><button class="btn-send btn-sm" onclick="sharePdf('invoices','${i.id}')">📄 PDF</button></td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : none("No invoices issued to this customer yet."))}
+  `;
+}
+
 function renderCategory(main, cat){
   const meta = CATS[cat];
   const records = db[cat];
@@ -840,6 +1010,7 @@ function renderCategory(main, cat){
   if(pi > 0) cols.unshift(cols.splice(pi,1)[0]);
   /* Mechanics cannot edit invoices but must still be able to send them. */
   const canPdf = (cat === "quotations" || cat === "invoices");
+  listCtx = {cat, cols, writable, canPdf};
   main.innerHTML = `
     <div class="toolbar">
       <div>
@@ -851,26 +1022,12 @@ function renderCategory(main, cat){
     ${!writable ? `<div class="readonly-note">👁 View-only${canPdf?` — you can still send the PDF`:``} — ask the admin to make changes here.</div>` : ``}
     <div class="card">
       ${records.length===0 ? `<div class="empty">No ${meta.label.toLowerCase()} yet.${writable ? ' Click "+ New" to add one.' : ''}</div>` : `
+      <div class="field" style="margin-bottom:12px">
+        <input id="listsearch" placeholder="🔎 Search ${meta.label.toLowerCase()}…" value="${esc(listQuery)}" oninput="applySearch(this.value)">
+      </div>
       <div class="tablewrap"><table>
         <thead><tr><th>Date/Time</th>${cols.map(f=>`<th>${f}</th>`).join("")}${writable||PERM.canDelete||canPdf?`<th></th>`:``}</tr></thead>
-        <tbody>
-          ${records.slice().reverse().map(r=>`
-            <tr>
-              <td data-label="Date/Time">${r.timestamp}</td>
-              ${cols.map(f=>{
-                const v = r[f] ?? "";
-                const cls = (v===""?"blank-cell":"") + (f==="plate"?" key-cell":"");
-                const shown = f==="items" ? esc(v).replace(/\n/g,"<br>") : esc(v);
-                return `<td data-label="${f}" class="${cls.trim()}">${shown}</td>`;
-              }).join("")}
-              ${writable||PERM.canDelete||canPdf?`<td class="row-actions" style="white-space:nowrap">
-                ${canPdf?`<button class="btn-send btn-sm" onclick="sharePdf('${cat}','${r.id}')">📄 Send PDF</button>`:``}
-                ${writable?`<button class="btn-outline btn-sm" onclick="openForm('${cat}','${r.id}')">Edit</button>`:``}
-                ${PERM.canDelete?`<button class="btn-danger btn-sm" onclick="deleteRecord('${cat}','${r.id}')">Delete</button>`:``}
-              </td>`:``}
-            </tr>
-          `).join("")}
-        </tbody>
+        <tbody id="rowsbox">${rowsHtml()}</tbody>
       </table></div>`}
     </div>
   `;
@@ -940,6 +1097,17 @@ function openForm(cat, editId){
       return `<div class="field"><label>quoteNo</label>
         <input id="f_quoteNo" value="${String(v).replace(/"/g,'&quot;')}">
         <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Auto-numbered — edit if you need to</div></div>`;
+    }
+    if(f==="lastService" || f==="dueDate"){
+      return `<div class="field"><label>${f}</label><input id="f_${f}" type="date" value="${esc(cur(f))}"></div>`;
+    }
+    if(f==="mileage" || f==="intervalKm" || f==="intervalMonths"){
+      const hint = f==="mileage" ? "km on the odometer at the last service"
+                 : f==="intervalMonths" ? "optional — service every N months"
+                 : "optional — service every N km";
+      return `<div class="field"><label>${f}</label>
+        <input id="f_${f}" type="number" inputmode="numeric" value="${esc(cur(f))}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${hint}</div></div>`;
     }
     if(f==="validUntil"){
       const v = existing ? cur(f) : dateInDays(7);

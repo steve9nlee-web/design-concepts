@@ -69,7 +69,7 @@ exactly, each with these header cells in row 1:
 | Tab | Row-1 headers (in order) |
 |---|---|
 | `Customers` | `Date/Time, ID, name, phone, email, address` |
-| `Vehicles` | `Date/Time, ID, plate, make, model, year, color, customer` |
+| `Vehicles` | `Date/Time, ID, plate, make, model, year, color, customer, lastService, mileage, intervalMonths, intervalKm` |
 | `Quotations` | `Date/Time, ID, quoteNo, customer, plate, status, validUntil, items, total` |
 | `Job Orders` | `Date/Time, ID, jobNo, quoteNo, customer, plate, priority, status, mechanic, department, items, total` |
 | `Invoices` | `Date/Time, ID, invoiceNo, jobNo, customer, plate, vehicle, items, amount, status` |
