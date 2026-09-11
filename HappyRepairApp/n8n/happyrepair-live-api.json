@@ -1,0 +1,294 @@
+{
+  "name": "HappyRepair — Live sync API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "happyrepair-data",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "10000000-0000-0000-0000-000000000001",
+      "name": "GET data",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-780, 0],
+      "webhookId": "11111111-1111-4111-8111-111111111101"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "auth-get",
+              "leftValue": "={{ $json.headers['x-happy-key'] }}",
+              "rightValue": "CHANGE_ME_SYNC_KEY",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000002",
+      "name": "Auth (read)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-560, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"error\": \"unauthorized\" }",
+        "options": { "responseCode": 401 }
+      },
+      "id": "10000000-0000-0000-0000-000000000003",
+      "name": "401 (read)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-340, 160]
+    },
+
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Customers" },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000011",
+      "name": "Read Customers",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-340, 0],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Vehicles" },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000012",
+      "name": "Read Vehicles",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-160, 0],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Quotations" },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000013",
+      "name": "Read Quotations",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [20, 0],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Job Orders" },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000014",
+      "name": "Read Job Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [200, 0],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Invoices" },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000015",
+      "name": "Read Invoices",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [380, 0],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Inventory" },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000016",
+      "name": "Read Inventory",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [560, 0],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Reminders" },
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000017",
+      "name": "Read Reminders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [740, 0],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const NODES = {customers:'Read Customers', vehicles:'Read Vehicles', quotations:'Read Quotations', jobOrders:'Read Job Orders', invoices:'Read Invoices', inventory:'Read Inventory', reminders:'Read Reminders'};\nconst out = {};\nfor (const [cat, name] of Object.entries(NODES)) {\n  let rows = [];\n  try { rows = $(name).all().map(i => i.json).filter(r => r && r.ID); } catch (e) { rows = []; }\n  out[cat] = rows;\n}\nreturn [{ json: out }];"
+      },
+      "id": "10000000-0000-0000-0000-000000000018",
+      "name": "Assemble data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000019",
+      "name": "Respond data",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1100, 0]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "happyrepair-save",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "20000000-0000-0000-0000-000000000001",
+      "name": "POST save",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-780, 400],
+      "webhookId": "11111111-1111-4111-8111-111111111102"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "auth-save",
+              "leftValue": "={{ $json.headers['x-happy-key'] }}",
+              "rightValue": "CHANGE_ME_SYNC_KEY",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "20000000-0000-0000-0000-000000000002",
+      "name": "Auth (write)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-560, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"error\": \"unauthorized\" }",
+        "options": { "responseCode": 401 }
+      },
+      "id": "20000000-0000-0000-0000-000000000003",
+      "name": "401 (write)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-340, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst b = item.body || item;\nconst rec = (b && b.record) || {};\nconst CAT_FIELDS = {\n  customers: ['name','phone','email','address'],\n  vehicles: ['plate','make','model','year','color','customer','lastService','mileage','intervalMonths','intervalKm'],\n  quotations: ['quoteNo','customer','plate','status','validUntil','items','total'],\n  jobOrders: ['jobNo','quoteNo','customer','plate','priority','status','mechanic','department','items','total'],\n  invoices: ['invoiceNo','jobNo','customer','plate','vehicle','items','amount','status'],\n  inventory: ['name','category','sku','qty','unit','cost','sell','reorderLevel'],\n  reminders: ['customer','phone','plate','dueDate','lastService','status'],\n};\nif (!CAT_FIELDS[b.cat] || !rec.id) throw new Error('bad request: unknown cat or missing record id');\nconst row = { cat: b.cat, 'Date/Time': String(rec.timestamp || ''), ID: String(rec.id), deleted: String(rec.deleted || '') };\nfor (const f of CAT_FIELDS[b.cat]) row[f] = rec[f] == null ? '' : String(rec[f]);\nreturn [{ json: row }];"
+      },
+      "id": "20000000-0000-0000-0000-000000000004",
+      "name": "Build row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-340, 400]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "id", "value": "1eV14PZdB8fyYpxTWMsEpsIefalyHGZkfFyMUvKIWOW8" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "={{ ({customers:'Customers',vehicles:'Vehicles',quotations:'Quotations',jobOrders:'Job Orders',invoices:'Invoices',inventory:'Inventory',reminders:'Reminders'})[$json.cat] }}" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["ID"], "schema": [] },
+        "options": {}
+      },
+      "id": "20000000-0000-0000-0000-000000000005",
+      "name": "Upsert row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-120, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"ok\": true }",
+        "options": {}
+      },
+      "id": "20000000-0000-0000-0000-000000000006",
+      "name": "Respond ok",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [100, 400]
+    }
+  ],
+  "connections": {
+    "GET data": { "main": [[{ "node": "Auth (read)", "type": "main", "index": 0 }]] },
+    "Auth (read)": {
+      "main": [
+        [{ "node": "Read Customers", "type": "main", "index": 0 }],
+        [{ "node": "401 (read)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Read Customers": { "main": [[{ "node": "Read Vehicles", "type": "main", "index": 0 }]] },
+    "Read Vehicles": { "main": [[{ "node": "Read Quotations", "type": "main", "index": 0 }]] },
+    "Read Quotations": { "main": [[{ "node": "Read Job Orders", "type": "main", "index": 0 }]] },
+    "Read Job Orders": { "main": [[{ "node": "Read Invoices", "type": "main", "index": 0 }]] },
+    "Read Invoices": { "main": [[{ "node": "Read Inventory", "type": "main", "index": 0 }]] },
+    "Read Inventory": { "main": [[{ "node": "Read Reminders", "type": "main", "index": 0 }]] },
+    "Read Reminders": { "main": [[{ "node": "Assemble data", "type": "main", "index": 0 }]] },
+    "Assemble data": { "main": [[{ "node": "Respond data", "type": "main", "index": 0 }]] },
+
+    "POST save": { "main": [[{ "node": "Auth (write)", "type": "main", "index": 0 }]] },
+    "Auth (write)": {
+      "main": [
+        [{ "node": "Build row", "type": "main", "index": 0 }],
+        [{ "node": "401 (write)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build row": { "main": [[{ "node": "Upsert row", "type": "main", "index": 0 }]] },
+    "Upsert row": { "main": [[{ "node": "Respond ok", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

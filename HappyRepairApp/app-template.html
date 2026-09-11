@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HappyRepairApp — Workshop Manager</title>
+<meta name="theme-color" content="#0f172a">
+<script src="xlsx.bundle.js"></script>
+<script src="jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0f172a; --navy2:#1e293b; --paper:#f7f8fa; --card:#ffffff;
+    --line:#e5e7eb; --muted:#64748b; --text:#0f172a; --accent:#2563eb;
+    --red:#dc2626; --amber:#d97706; --green:#16a34a;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--paper);color:var(--text);}
+  .app{display:flex;min-height:100vh;max-width:100%;}
+  .sidebar{width:220px;background:var(--navy);color:#cbd5e1;flex-shrink:0;padding:18px 12px;}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;padding:6px 8px 20px;}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:#fff;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .navlabel{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;padding:14px 10px 6px;}
+  .navitem{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:14.5px;color:#cbd5e1;}
+  .navitem:hover{background:#1e293b;}
+  .navitem.active{background:#2563eb;color:#fff;}
+  .rolebadge{display:inline-block;margin-top:3px;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:#2563eb;color:#fff;}
+  .rolebadge.mechanic{background:#d97706;}
+  .main{flex:1;min-width:0;padding:22px 26px 60px;max-width:1100px;}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  h1{font-size:26px;margin:2px 0 2px;}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:14px;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+  .stat{font-size:28px;font-weight:700;}
+  .stat-label{color:var(--muted);font-size:13px;}
+  .card.tap{cursor:pointer;transition:transform .08s ease,border-color .15s,box-shadow .15s;}
+  .card.tap:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(37,99,235,.14);}
+  .card.tap:active{transform:scale(.97);}
+  input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;width:100%;}
+  textarea{min-height:60px;resize:vertical;}
+  label{font-size:12.5px;font-weight:600;color:#334155;display:block;margin-bottom:5px;}
+  .field{margin-bottom:12px;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  button{cursor:pointer;border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:600;font-family:inherit;}
+  .btn-dark{background:var(--navy);color:#fff;}
+  .btn-outline{background:#fff;border:1px solid var(--line);color:var(--text);}
+  .btn-danger{background:#fef2f2;color:var(--red);border:1px solid #fecaca;}
+  .btn-send{background:#eff6ff;color:var(--accent);border:1px solid #bfdbfe;}
+  .itemrow{display:flex;gap:6px;margin-bottom:6px;}
+  .itemrow .it-desc{flex:1;}
+  .itemrow .it-amt{width:110px;flex:none;}
+  .itemrow .btn-sm{flex:none;}
+  .btn-sm{padding:6px 10px;font-size:12.5px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;color:var(--muted);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--line);font-size:12.5px;}
+  td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#eef2ff;color:#3730a3;white-space:nowrap;}
+  .pill.ok{background:#dcfce7;color:#166534;}
+  .pill.bad{background:#fee2e2;color:#991b1b;}
+  .pill.wait{background:#fef3c7;color:#92400e;}
+  .sec-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .sec-head h3{margin:0;font-size:16px;}
+  .doc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;}
+  .doc-no{font-size:16px;font-weight:700;}
+  .doc-meta{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .doc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;}
+  .doc-line{display:flex;justify-content:space-between;gap:14px;padding:5px 0;font-size:14px;border-bottom:1px dashed var(--line);}
+  .doc-line b{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .doc-line.doc-empty span{color:var(--muted);font-style:italic;}
+  .doc-total{display:flex;justify-content:space-between;gap:14px;padding-top:8px;margin-top:2px;font-size:15px;font-weight:700;}
+  .doc-total span{color:var(--muted);font-weight:600;}
+  .docsep{border-top:2px solid var(--red);margin:20px 0 14px;text-align:center;}
+  .docsep span{display:inline-block;transform:translateY(-9px);background:var(--card);color:var(--red);
+               font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:0 10px;}
+  .logobox{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;display:inline-block;}
+  .logobox img{max-width:220px;max-height:90px;display:block;}
+  .sec-head .count{background:#eef2ff;color:#3730a3;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+  .search{flex:1;min-width:200px;}
+  .modalbg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:50;}
+  .modalbg.open{display:flex;}
+  .modal{background:#fff;border-radius:16px;padding:22px;max-width:640px;width:100%;}
+  .modal h2{margin-top:0;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+  .empty{color:var(--muted);font-size:14px;padding:20px 4px;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .chip{padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;cursor:pointer;background:#fff;}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;font-size:13.5px;z-index:99;opacity:0;transition:opacity .2s;}
+  .toast.show{opacity:1;}
+  .ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-46px);background:var(--navy);color:#fff;
+       padding:8px 18px;border-radius:0 0 12px 12px;font-size:13px;z-index:98;transition:transform .18s ease;}
+  .ptr.show{transform:translate(-50%,0);}
+  .exportbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+  .switch{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+  .readonly-note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+  @media(max-width:760px){
+    /* A 10-column table cannot fit a phone, so each record becomes a card. */
+    .tablewrap{overflow-x:visible;}
+    table,thead,tbody,tr,td{display:block;width:100%;}
+    thead{display:none;}
+    tbody tr{border:1px solid var(--line);border-radius:12px;padding:10px 12px 12px;margin-bottom:10px;}
+    tbody td{border:none;padding:4px 0;display:flex;gap:12px;align-items:baseline;justify-content:space-between;font-size:14px;}
+    tbody td::before{content:attr(data-label);color:var(--muted);font-weight:600;font-size:12px;flex:0 0 38%;}
+    tbody td.blank-cell{display:none;}
+    tbody td.key-cell{font-size:18px;font-weight:700;padding-bottom:6px;}
+    tbody td.key-cell::before{font-size:12px;font-weight:600;}
+    tbody td.row-actions{justify-content:flex-end;gap:8px;padding-top:10px;margin-top:6px;border-top:1px solid var(--line);}
+    tbody td.row-actions::before{content:"";flex:0;}
+    .app{flex-direction:column;}
+    .sidebar{width:100%;display:flex;overflow-x:auto;gap:4px;padding:10px;}
+    .brand{display:none;}
+    .navlabel{display:none;}
+    .navitem{white-space:nowrap;}
+    .main{padding:16px;}
+    .field-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main"></div>
+</div>
+<div class="modalbg" id="modalbg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<div class="ptr" id="ptr">↓ Pull to refresh</div>
+
+<script>
+/* ---------- Role ---------- */
+const ROLE = "__ROLE__"; /* "admin" or "mechanic" — set at build time */
+const ROLES = {
+  admin: {
+    label: "Admin",
+    cats: ["customers","vehicles","quotations","jobOrders","invoices","inventory","reminders"],
+    readOnly: [],
+    canDelete: true, canExport: true, canSettings: true, canImport: true,
+  },
+  mechanic: {
+    label: "Mechanic",
+    cats: ["jobOrders","quotations","customers","vehicles","invoices","inventory","reminders"],
+    readOnly: ["invoices","inventory","reminders"],
+    canDelete: false, canExport: false, canSettings: false, canImport: true,
+  },
+};
+const PERM = ROLES[ROLE] || ROLES.admin;
+function canWrite(cat){ return PERM.cats.includes(cat) && !PERM.readOnly.includes(cat); }
+
+/* ---------- Data layer ---------- */
+const CATS = {
+  customers:  {label:"Customers",  icon:"👤", fields:["name","phone","email","address"]},
+  vehicles:   {label:"Vehicles",   icon:"🚗", fields:["plate","make","model","year","color","customer","lastService","mileage","intervalMonths","intervalKm"]},
+  quotations: {label:"Quotations", icon:"💲", fields:["quoteNo","customer","plate","status","validUntil","items","total"]},
+  jobOrders:  {label:"Job Orders", icon:"📋", fields:["jobNo","quoteNo","customer","plate","priority","status","mechanic","department","items","total"]},
+  invoices:   {label:"Invoices",   icon:"🧾", fields:["invoiceNo","jobNo","customer","plate","vehicle","items","amount","status"]},
+  inventory:  {label:"Inventory",  icon:"🔩", fields:["name","category","sku","qty","unit","cost","sell","reorderLevel"]},
+  reminders:  {label:"Reminders",  icon:"🔔", fields:["customer","phone","plate","dueDate","lastService","status"]},
+};
+const APP_KEY = "happyRepairApp_db_v1";
+
+function loadDB(){
+  try{ return JSON.parse(localStorage.getItem(APP_KEY)) || emptyDB(); }
+  catch(e){ return emptyDB(); }
+}
+function emptyDB(){
+  const db = {shop:{name:"HAPPY ENTERPRISE",address:"",phone:"",email:"",tax:0,currency:"MYR"}, mechanicNames:[]};
+  Object.keys(CATS).forEach(k=>db[k]=[]);
+  return db;
+}
+const MECHANIC_SEED = ["Alex","Adrian"];
+function mechanicNames(extra){
+  const set = new Set([...MECHANIC_SEED, ...(db.mechanicNames||[])]);
+  (db.jobOrders||[]).forEach(j=>{ if(j.mechanic) set.add(j.mechanic); });
+  if(extra) set.add(extra);
+  return [...set];
+}
+/* Running document number: prefix + YYMM + "-" + sequence, restarting each
+   month, e.g. Q2609-001. Highest existing number for the month wins, so it
+   keeps counting correctly after data syncs in from another device. */
+function nextDocNo(cat, field, prefix){
+  const d = new Date();
+  const stem = prefix + String(d.getFullYear()).slice(-2) + String(d.getMonth()+1).padStart(2,"0") + "-";
+  let max = 0;
+  (db[cat]||[]).forEach(r=>{
+    const v = String(r[field]||"");
+    if(v.indexOf(stem)===0){
+      const n = parseInt(v.slice(stem.length),10);
+      if(!isNaN(n) && n>max) max = n;
+    }
+  });
+  return stem + String(max+1).padStart(3,"0");
+}
+function dateInDays(days){
+  const d = new Date();
+  d.setDate(d.getDate()+days);
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function addMechanicName(){
+  const n = (prompt("New mechanic name:")||"").trim();
+  if(!n) return;
+  db.mechanicNames = db.mechanicNames || [];
+  if(!db.mechanicNames.includes(n)) db.mechanicNames.push(n);
+  saveDB();
+  const s = document.getElementById("f_mechanic");
+  if(s){
+    if(![...s.options].some(o=>o.value===n)){
+      const o = document.createElement("option");
+      o.textContent = n; o.value = n;
+      s.appendChild(o);
+    }
+    s.value = n;
+  }
+  toast("Added "+n);
+}
+let db = loadDB();
+Object.keys(CATS).forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+function saveDB(){ localStorage.setItem(APP_KEY, JSON.stringify(db)); }
+
+function nowStamp(){
+  const d = new Date();
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function addRecord(cat, obj){
+  obj.id = cat.slice(0,2).toUpperCase()+"-"+Date.now();
+  obj.timestamp = nowStamp();
+  db[cat].push(obj);
+  saveDB();
+  toast(CATS[cat].label.slice(0,-1)+" saved");
+  autoExportIfOn();
+  pushRecord(cat, obj);
+  runConversions(cat, obj);
+  render();
+}
+function updateRecord(cat, id, obj){
+  const r = db[cat].find(x=>x.id===id);
+  if(!r) return;
+  Object.assign(r, obj);
+  r.timestamp = nowStamp();
+  saveDB();
+  toast(CATS[cat].label.slice(0,-1)+" updated");
+  autoExportIfOn();
+  pushRecord(cat, r);
+  runConversions(cat, r);
+  render();
+}
+function runConversions(cat, rec){
+  if(cat === "quotations"){
+    const job = autoJobFromQuote(rec);
+    if(job) toast("Converted — job order " + job.jobNo + " created");
+  }
+  if(cat === "jobOrders"){
+    const inv = autoInvoiceFromJob(rec);
+    if(inv) toast(rec.status + " — invoice " + inv.invoiceNo + " created");
+  }
+}
+function deleteRecord(cat,id){
+  if(!PERM.canDelete) return;
+  const rec = db[cat].find(r=>r.id===id);
+  db[cat] = db[cat].filter(r=>r.id!==id);
+  saveDB(); render();
+  toast("Deleted");
+  if(rec){ rec.deleted = "yes"; rec.timestamp = nowStamp(); pushRecord(cat, rec); }
+}
+
+/* ---------- Live sync via n8n webhooks (optional) ----------
+   Pull: GET  <url>/happyrepair-data  → replaces local data (server wins)
+   Push: POST <url>/happyrepair-save  → upserts one record by ID
+   Offline saves queue in an outbox and send on the next sync. */
+const SYNC_KEY_LS = "happyRepairSync_v1";
+const OUTBOX_LS = "happyRepairOutbox_v1";
+function syncCfg(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY_LS)) || {}; }catch(e){ return {}; } }
+function saveSyncCfg(c){ localStorage.setItem(SYNC_KEY_LS, JSON.stringify(c)); }
+function outbox(){ try{ return JSON.parse(localStorage.getItem(OUTBOX_LS)) || []; }catch(e){ return []; } }
+function saveOutbox(q){ localStorage.setItem(OUTBOX_LS, JSON.stringify(q)); }
+function syncConfigured(){ const c = syncCfg(); return !!(c.url && c.key); }
+function syncBase(){ return (syncCfg().url||"").replace(/\/+$/,""); }
+
+let lastSyncAt = null, syncBusy = false;
+function setSyncStatus(){
+  const el = document.getElementById("syncStatus");
+  if(!el) return;
+  const n = outbox().length;
+  if(!syncConfigured()) el.textContent = "⚪ live sync not set up";
+  else if(n > 0) el.textContent = "🔴 offline — "+n+" change(s) queued";
+  else if(lastSyncAt) el.textContent = "🟢 live · synced "+lastSyncAt;
+  else el.textContent = "🟡 live sync on — not synced yet";
+}
+
+function recordPayload(cat, r){
+  const o = { id: r.id, timestamp: r.timestamp, deleted: r.deleted || "" };
+  CATS[cat].fields.forEach(f=> o[f] = r[f] ?? "");
+  return { cat, record: o };
+}
+function statusHint(status){
+  if(status===401 || status===403) return "wrong sync key?";
+  if(status===404) return "workflow not Active in n8n?";
+  if(status>=500) return "n8n workflow error — check its Executions log";
+  return "HTTP "+status;
+}
+async function postSave(payload){
+  const r = await fetch(syncBase()+"/happyrepair-save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-happy-key": syncCfg().key },
+    body: JSON.stringify(payload),
+  });
+  if(!r.ok) throw new Error("Save rejected ("+statusHint(r.status)+")");
+}
+function pushRecord(cat, rec){
+  if(!syncConfigured()) return;
+  const payload = recordPayload(cat, rec);
+  postSave(payload).then(()=>{ lastSyncAt = nowStamp().slice(11,16); setSyncStatus(); })
+    .catch(()=>{ const q = outbox(); q.push(payload); saveOutbox(q); setSyncStatus(); });
+}
+async function flushOutbox(){
+  let q = outbox();
+  while(q.length){
+    try{ await postSave(q[0]); q.shift(); saveOutbox(q); }
+    catch(e){ break; }
+  }
+  return outbox().length === 0;
+}
+/* Spreadsheet headers drift in case ("Department" vs "department"), so match
+   column names case-insensitively rather than losing the value. */
+function rowGet(row, field){
+  if(row[field] != null) return row[field];
+  const want = String(field).toLowerCase();
+  for(const k in row){ if(String(k).toLowerCase() === want) return row[k]; }
+  return "";
+}
+async function syncPull(){
+  let r;
+  try{
+    r = await fetch(syncBase()+"/happyrepair-data", { headers: { "x-happy-key": syncCfg().key } });
+  }catch(e){
+    throw new Error("Cannot reach server (no internet, wrong URL, or blocked request)");
+  }
+  if(!r.ok) throw new Error("Server refused ("+statusHint(r.status)+")");
+  const data = await r.json();
+  let touched = false;
+  const reupload = [];
+  Object.keys(CATS).forEach(cat=>{
+    if(!Array.isArray(data[cat])) return;
+    /* Server knows nothing about this category but this device does: keep the
+       local records and upload them instead of wiping them. */
+    if(data[cat].length === 0 && (db[cat]||[]).length > 0){ reupload.push(cat); return; }
+    db[cat] = data[cat]
+      .filter(row=>String(rowGet(row,"deleted")||"").toLowerCase() !== "yes")
+      .map(row=>{
+        const o = { id: String(rowGet(row,"ID")), timestamp: String(rowGet(row,"Date/Time")||"") };
+        CATS[cat].fields.forEach(f=>{ const v = rowGet(row,f); o[f] = v == null ? "" : String(v); });
+        return o;
+      });
+    touched = true;
+  });
+  if(touched) saveDB();
+  reupload.forEach(cat=> (db[cat]||[]).forEach(rec=> pushRecord(cat, rec)));
+  return touched;
+}
+async function syncNow(manual){
+  if(!syncConfigured()){
+    if(manual){ toast("Set the sync server URL and key first"); nav(PERM.canSettings ? "settings" : "sync"); }
+    return;
+  }
+  if(syncBusy) return;
+  syncBusy = true;
+  try{
+    const flushed = await flushOutbox();
+    if(flushed){
+      await syncPull();
+      lastSyncAt = nowStamp().slice(11,16);
+      if(manual) toast("Synced");
+      /* don't yank the UI out from under an open form */
+      if(!document.getElementById("modalbg").classList.contains("open")) render();
+      else setSyncStatus();
+    } else if(manual){
+      toast("Offline — changes queued, will retry");
+      setSyncStatus();
+    }
+  }catch(e){
+    if(manual) toast("Sync failed: "+(e && e.message ? e.message : e));
+    setSyncStatus();
+  }finally{
+    syncBusy = false;
+  }
+}
+setInterval(()=>{ const c = syncCfg(); if(syncConfigured() && c.auto !== false) syncNow(false); }, 60000);
+function autoExportIfOn(){
+  const el = document.getElementById("autoExport");
+  if(el && el.checked) exportExcel(true);
+}
+
+/* ---------- Excel export: one sheet per category, rows timestamped ---------- */
+function buildWorkbook(){
+  const wb = XLSX.utils.book_new();
+  Object.keys(CATS).forEach(cat=>{
+    const rows = db[cat].map(r=>{
+      const o = {"Date/Time": r.timestamp, "ID": r.id};
+      CATS[cat].fields.forEach(f=> o[f] = r[f] ?? "");
+      return o;
+    });
+    const ws = XLSX.utils.json_to_sheet(rows.length?rows:[{"Date/Time":"","ID":""}]);
+    XLSX.utils.book_append_sheet(wb, ws, CATS[cat].label.slice(0,31));
+  });
+  return wb;
+}
+/* ---------- Readable document sheets: every line of every document ---------- */
+const XL_STYLE = {
+  head:    {font:{bold:true,sz:12,color:{rgb:"FFFFFF"}}, fill:{patternType:"solid",fgColor:{rgb:"0F172A"}}},
+  sub:     {font:{color:{rgb:"475569"}}},
+  colhead: {font:{bold:true,color:{rgb:"475569"}}, fill:{patternType:"solid",fgColor:{rgb:"F1F5F9"}}},
+  total:   {font:{bold:true}},
+  sep:     {font:{bold:true,color:{rgb:"FFFFFF"}}, fill:{patternType:"solid",fgColor:{rgb:"DC2626"}},
+            alignment:{horizontal:"center"}},
+};
+function styleRow(ws, r, style, cols){
+  for(let c=0;c<cols;c++){
+    const a = XLSX.utils.encode_cell({r, c});
+    if(!ws[a]) ws[a] = {t:"s", v:""};
+    ws[a].s = style;
+  }
+}
+function docSheet(kind, records, totalKey, totalLabel){
+  const rows = [], mark = {head:[],sub:[],colhead:[],total:[],sep:[]};
+  records.slice().reverse().forEach((r, i)=>{
+    if(i){ mark.sep.push(rows.length); rows.push(["NEXT DOCUMENT","","",""]); }
+    mark.head.push(rows.length);
+    rows.push([kind.toUpperCase(), r.quoteNo || r.jobNo || r.invoiceNo || "",
+               String(r.timestamp||"").slice(0,16), r.status||""]);
+    mark.sub.push(rows.length);
+    rows.push(["Customer", r.customer||"", "Plate", r.plate||""]);
+    mark.sub.push(rows.length);
+    rows.push(kind === "quotation" ? ["Valid until", r.validUntil||"", "", ""]
+            : kind === "job sheet" ? ["Mechanic", r.mechanic||"", "Department", r.department||""]
+            : ["Vehicle", r.vehicle||"", "Job no", r.jobNo||""]);
+    mark.colhead.push(rows.length);
+    rows.push(["Description","","","Amount"]);
+    const items = parseItems(r.items);
+    if(items.length) items.forEach(it=>
+      rows.push([it.desc||"", "", "", String(it.amount).trim()==="" ? "" : Number(money(it.amount))]));
+    else rows.push(["(no work lines recorded)","","",""]);
+    mark.total.push(rows.length);
+    rows.push([totalLabel,"","", Number(money(r[totalKey]))]);
+  });
+  if(!rows.length) rows.push(["No " + kind + "s recorded yet","","",""]);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{wch:48},{wch:20},{wch:18},{wch:14}];
+  ws["!merges"] = mark.sep.map(r=>({s:{r,c:0}, e:{r,c:3}}));
+  Object.keys(mark).forEach(k=> mark[k].forEach(r=> styleRow(ws, r, XL_STYLE[k], 4)));
+  return ws;
+}
+function exportExcel(silent){
+  if(!PERM.canExport) return;
+  const wb = buildWorkbook();
+  /* The flat sheets above stay machine-readable for Import; these add the
+     documents written out in full, ruled in red between one and the next. */
+  XLSX.utils.book_append_sheet(wb, docSheet("quotation", db.quotations||[], "total", "Quotation total"), "Quotations (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("job sheet", db.jobOrders||[], "total", "Job total"), "Job Sheets (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("invoice", db.invoices||[], "amount", "Amount due"), "Invoices (full)");
+  if(window.AndroidBridge && AndroidBridge.saveBase64){
+    /* Native Android bridge: write straight into the Downloads folder */
+    const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
+    const ok = AndroidBridge.saveBase64("HappyRepairApp_data.xlsx", b64);
+    if(!silent) toast(ok ? "Excel saved to Downloads" : "Could not save file");
+  } else {
+    XLSX.writeFile(wb, "HappyRepairApp_data.xlsx");
+    if(!silent) toast("Excel exported");
+  }
+}
+/* Share the fresh .xlsx via the Android share sheet (pick Google Drive there) */
+function shareExcel(){
+  if(!PERM.canExport) return;
+  const wb = buildWorkbook();
+  XLSX.utils.book_append_sheet(wb, docSheet("quotation", db.quotations||[], "total", "Quotation total"), "Quotations (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("job sheet", db.jobOrders||[], "total", "Job total"), "Job Sheets (full)");
+  XLSX.utils.book_append_sheet(wb, docSheet("invoice", db.invoices||[], "amount", "Amount due"), "Invoices (full)");
+  if(window.AndroidBridge && AndroidBridge.shareBase64){
+    const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
+    const ok = AndroidBridge.shareBase64("HappyRepairApp_data.xlsx", b64);
+    toast(ok ? "Pick Google Drive in the share menu" : "Could not share file");
+  } else {
+    XLSX.writeFile(wb, "HappyRepairApp_data.xlsx");
+    toast("Excel exported — upload it to Drive manually");
+  }
+}
+/* ---------- Excel import (e.g. the file the admin put on Google Drive) ---------- */
+function importExcel(){
+  if(!PERM.canImport) return;
+  if(window.AndroidBridge && AndroidBridge.importExcel) AndroidBridge.importExcel();
+  else toast("Import needs the Android app");
+}
+window.onExcelImport = function(b64){
+  try{
+    const wb = XLSX.read(b64, {type:"base64"});
+    const next = {};
+    let total = 0;
+    Object.keys(CATS).forEach(cat=>{
+      const ws = wb.Sheets[CATS[cat].label.slice(0,31)];
+      if(!ws) return;
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+      next[cat] = rows.filter(r=>r["ID"]).map(r=>{
+        const o = {id:String(r["ID"]), timestamp:String(r["Date/Time"]||nowStamp())};
+        CATS[cat].fields.forEach(f=> o[f] = r[f]!==undefined ? String(r[f]) : "");
+        return o;
+      });
+      total += next[cat].length;
+    });
+    if(total===0){ toast("No HappyRepair records found in that file"); return; }
+    if(!confirm("Replace the data on this device with "+total+" record(s) from the file?")) return;
+    Object.keys(next).forEach(cat=> db[cat]=next[cat]);
+    saveDB(); render();
+    toast("Imported "+total+" record(s)");
+  }catch(e){
+    toast("Could not read that Excel file");
+  }
+};
+window.onExcelImportError = function(){ toast("Could not open that file"); };
+
+/* ---------- Status colours: green when settled, red when lost or overdue ---------- */
+const STATUS_OK   = ["approved","converted","paid","completed","delivered"];
+const STATUS_BAD  = ["declined","overdue","cancelled"];
+function statusPill(status){
+  const v = String(status||"").trim();
+  if(!v) return "";
+  const l = v.toLowerCase();
+  const cls = STATUS_OK.includes(l) ? "ok" : STATUS_BAD.includes(l) ? "bad" : "wait";
+  return `<span class="pill ${cls}">${esc(v)}</span>`;
+}
+
+/* ---------- When is this vehicle next due? ---------- */
+function addMonths(dateStr, months){
+  const d = new Date(dateStr);
+  if(isNaN(d.getTime()) || !months) return null;
+  d.setMonth(d.getMonth() + Number(months));
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function serviceDue(v){
+  const out = {};
+  const due = addMonths(v.lastService, v.intervalMonths);
+  if(due){
+    out.date = due;
+    const days = Math.round((new Date(due) - new Date()) / 86400000);
+    out.days = days;
+    out.state = days < 0 ? "bad" : days <= 30 ? "wait" : "ok";
+  }
+  const km = Number(String(v.mileage||"").replace(/[^0-9.]/g,""));
+  const iv = Number(String(v.intervalKm||"").replace(/[^0-9.]/g,""));
+  if(km && iv) out.km = Math.round(km + iv);
+  return out;
+}
+
+/* ---------- Work lines: one per line, stored as "description | amount" ---------- */
+function parseItems(text){
+  return String(text||"").split("\n").map(l=>l.trim()).filter(Boolean).map(line=>{
+    const i = line.lastIndexOf("|");
+    return i === -1 ? {desc:line, amount:""}
+                    : {desc:line.slice(0,i).trim(), amount:line.slice(i+1).trim()};
+  });
+}
+function itemsTotal(text){
+  return parseItems(text).reduce((sum,it)=> sum + (Number(String(it.amount).replace(/[^0-9.\-]/g,"")) || 0), 0);
+}
+function plateList(extra, customer){
+  let vs = db.vehicles || [];
+  if(customer) vs = vs.filter(v=>String(v.customer||"").trim() === String(customer).trim());
+  const set = new Set(vs.map(v=>v.plate).filter(Boolean));
+  if(extra) set.add(extra);
+  return [...set];
+}
+function plateOptionsHtml(selected, customer){
+  const list = plateList(selected, customer);
+  return `<option value="">Pick car plate</option>` +
+    list.map(n=>`<option ${selected===n?'selected':''}>${esc(n)}</option>`).join("");
+}
+function esc(v){
+  return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ---------- Work-line editor inside the form ---------- */
+function itemRowHtml(it){
+  return `<div class="itemrow">
+    <input class="it-desc" placeholder="what to repair / what to spray" value="${esc(it&&it.desc)}" oninput="syncItems()">
+    <input class="it-amt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" value="${esc(it&&it.amount)}" oninput="syncItems()">
+    <button type="button" class="btn-danger btn-sm" onclick="this.parentNode.remove();syncItems()" title="Remove">✕</button>
+  </div>`;
+}
+function addItemRow(){
+  const box = document.getElementById("itemrows");
+  if(!box) return;
+  box.insertAdjacentHTML("beforeend", itemRowHtml(null));
+  const rows = box.querySelectorAll(".it-desc");
+  if(rows.length) rows[rows.length-1].focus();
+  syncItems();
+}
+function syncItems(){
+  const box = document.getElementById("itemrows");
+  const hidden = document.getElementById("f_items");
+  if(!box || !hidden) return;
+  const lines = [...box.querySelectorAll(".itemrow")].map(r=>{
+    const d = r.querySelector(".it-desc").value.trim();
+    const a = r.querySelector(".it-amt").value.trim();
+    return d || a ? d + " | " + a : "";
+  }).filter(Boolean);
+  hidden.value = lines.join("\n");
+  const total = document.getElementById("f_total") || document.getElementById("f_amount");
+  if(total && lines.length) total.value = itemsTotal(hidden.value).toFixed(2);
+}
+
+/* ---------- PDF documents (offline, shareable to WhatsApp etc.) ---------- */
+function money(n){
+  const v = Number(String(n).replace(/[^0-9.\-]/g,"")) || 0;
+  return v.toFixed(2);
+}
+function pickLogo(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    const img = new Image();
+    img.onload = ()=>{
+      /* Shrink before storing: a phone photo would otherwise fill the
+         device's storage and bloat every PDF. */
+      const scale = Math.min(1, 600/img.width, 300/img.height);
+      const w = Math.max(1, Math.round(img.width*scale));
+      const h = Math.max(1, Math.round(img.height*scale));
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      let data = cv.toDataURL("image/png");          /* keeps transparency */
+      if(data.length > 300000){                       /* photo-like: flatten */
+        const cv2 = document.createElement("canvas");
+        cv2.width = w; cv2.height = h;
+        const c2 = cv2.getContext("2d");
+        c2.fillStyle = "#fff"; c2.fillRect(0,0,w,h);
+        c2.drawImage(img, 0, 0, w, h);
+        data = cv2.toDataURL("image/jpeg", 0.85);
+      }
+      db.shop = db.shop || {};
+      db.shop.logo = data; db.shop.logoW = w; db.shop.logoH = h;
+      saveDB(); toast("Logo saved — it will appear on your documents"); render();
+    };
+    img.onerror = ()=> toast("That file is not an image");
+    img.src = fr.result;
+  };
+  fr.onerror = ()=> toast("Could not read that file");
+  fr.readAsDataURL(file);
+}
+function removeLogo(){
+  if(!db.shop) return;
+  delete db.shop.logo; delete db.shop.logoW; delete db.shop.logoH;
+  saveDB(); toast("Logo removed"); render();
+}
+function logoCard(){
+  const shop = db.shop || {};
+  return `
+    <div class="card" style="max-width:520px;margin-top:16px">
+      <h3 style="margin-top:0">🖼 Shop logo</h3>
+      <p class="sub" style="margin-top:0">Printed on every quotation and invoice PDF.</p>
+      ${shop.logo ? `<div class="logobox"><img src="${shop.logo}" alt="Shop logo"></div>` : ``}
+      <div class="row" style="margin-top:10px">
+        <label class="btn-dark" style="display:inline-block;margin:0;padding:10px 16px;border-radius:9px;color:#fff">
+          ${shop.logo ? "Replace logo" : "Upload logo"}
+          <input type="file" accept="image/*" style="display:none" onchange="pickLogo(this)">
+        </label>
+        ${shop.logo ? `<button class="btn-danger btn-sm" onclick="removeLogo()">Remove</button>` : ``}
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px">
+        PNG with a transparent background works best. Stored on this device — upload it on each tablet.
+      </div>
+    </div>`;
+}
+function shopCurrency(){ return (db.shop && db.shop.currency) || "MYR"; }
+
+function buildDocPdf(kind, rec){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"mm", format:"a4"});
+  const shop = db.shop || {};
+  const L = 18, R = 192, W = R - L;
+  let y = 20;
+
+  /* Letterhead */
+  let tx = L;
+  if(shop.logo){
+    const maxW = 36, maxH = 16;
+    const nw = Number(shop.logoW) || maxW, nh = Number(shop.logoH) || maxH;
+    const k = Math.min(maxW/nw, maxH/nh);
+    try{
+      doc.addImage(shop.logo, L, y - 6, nw*k, nh*k);
+      tx = L + nw*k + 5;
+    }catch(e){ /* unreadable logo: fall back to a text-only letterhead */ }
+  }
+  doc.setFont("helvetica","bold"); doc.setFontSize(17);
+  doc.text(String(shop.name || "HAPPY ENTERPRISE"), tx, y);
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90);
+  const lines = [shop.address, [shop.phone, shop.email].filter(Boolean).join("  ·  ")]
+    .filter(Boolean).join("\n").split("\n").filter(Boolean);
+  lines.forEach((t,i)=> doc.text(String(t), tx, y + 6 + i*4.5));
+
+  /* Document title + number */
+  doc.setTextColor(15,23,42); doc.setFont("helvetica","bold"); doc.setFontSize(20);
+  doc.text(kind === "quotation" ? "QUOTATION" : "INVOICE", R, y, {align:"right"});
+  doc.setFontSize(10); doc.setFont("helvetica","normal");
+  const no = kind === "quotation" ? (rec.quoteNo||"—") : (rec.invoiceNo||"—");
+  doc.text("No.  " + no, R, y + 6, {align:"right"});
+  doc.text("Date  " + String(rec.timestamp||"").slice(0,10), R, y + 11, {align:"right"});
+  if(kind === "quotation" && rec.validUntil) doc.text("Valid until  " + rec.validUntil, R, y + 16, {align:"right"});
+  if(kind === "invoice" && rec.jobNo) doc.text("Job  " + rec.jobNo, R, y + 16, {align:"right"});
+
+  y += 26;
+  doc.setDrawColor(226,232,240); doc.line(L, y, R, y);
+  y += 9;
+
+  /* Bill to / vehicle */
+  doc.setFontSize(9); doc.setTextColor(100);
+  doc.text("BILL TO", L, y);
+  doc.text("VEHICLE", L + W/2, y);
+  doc.setTextColor(15,23,42); doc.setFontSize(11); doc.setFont("helvetica","bold");
+  doc.text(String(rec.customer || "—"), L, y + 6);
+  doc.text(String(rec.plate || "—"), L + W/2, y + 6);
+  doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  if(rec.vehicle) doc.text(String(rec.vehicle), L + W/2, y + 11.5);
+  y += 20;
+
+  /* Description block */
+  doc.setFillColor(241,245,249); doc.rect(L, y, W, 9, "F");
+  doc.setFontSize(9); doc.setTextColor(71,85,105); doc.setFont("helvetica","bold");
+  doc.text("DESCRIPTION", L + 3, y + 6);
+  doc.text("AMOUNT (" + shopCurrency() + ")", R - 3, y + 6, {align:"right"});
+  y += 9;
+
+  const base = kind === "quotation" ? rec.total : rec.amount;
+  const items = parseItems(rec.items);
+  doc.setFont("helvetica","normal"); doc.setTextColor(15,23,42); doc.setFontSize(10);
+  if(items.length){
+    y += 3;
+    items.forEach(it=>{
+      const wrapped = doc.splitTextToSize(it.desc || "—", W - 45);
+      doc.text(wrapped, L + 3, y + 5);
+      if(String(it.amount).trim() !== "") doc.text(money(it.amount), R - 3, y + 5, {align:"right"});
+      y += Math.max(8, wrapped.length * 5 + 3);
+    });
+    y += 3;
+  } else {
+    const fallback = kind === "quotation" ? "Workshop services as quoted"
+                   : (rec.jobNo ? "Workshop services — job " + rec.jobNo : "Workshop services rendered");
+    const wrapped = doc.splitTextToSize(fallback, W - 45);
+    doc.text(wrapped, L + 3, y + 6);
+    doc.text(money(base), R - 3, y + 6, {align:"right"});
+    y += Math.max(14, wrapped.length * 5 + 9);
+  }
+  doc.setDrawColor(226,232,240); doc.line(L, y, R, y);
+
+  /* The amount entered is the amount charged — no tax is added on top. */
+  y += 8;
+  doc.setFont("helvetica","bold"); doc.setFontSize(12);
+  doc.text(kind === "quotation" ? "Quotation total" : "Amount due", R - 45, y, {align:"right"});
+  doc.text(shopCurrency() + " " + money(base), R - 3, y, {align:"right"});
+
+  /* Footer */
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(120);
+  const foot = kind === "quotation"
+    ? "This quotation is valid until " + (rec.validUntil || "the date stated above") + ". Thank you for your enquiry."
+    : "Status: " + (rec.status || "Draft") + ".  Thank you for your business.";
+  doc.text(doc.splitTextToSize(foot, W), L, 275);
+  return { doc, filename: (kind === "quotation" ? "Quotation_" : "Invoice_") + String(no).replace(/[^\w\-]/g,"") + ".pdf" };
+}
+
+function sharePdf(cat, id){
+  const rec = (db[cat]||[]).find(r=>r.id===id);
+  if(!rec) return;
+  try{
+    const { doc, filename } = buildDocPdf(cat === "quotations" ? "quotation" : "invoice", rec);
+    if(window.AndroidBridge && AndroidBridge.shareFile){
+      const b64 = doc.output("datauristring").split("base64,")[1];
+      const ok = AndroidBridge.shareFile(filename, b64, "application/pdf");
+      toast(ok ? "Pick WhatsApp or any app to send" : "Could not create the PDF");
+    } else {
+      doc.save(filename);
+      toast("PDF saved");
+    }
+  }catch(e){
+    toast("Could not create the PDF");
+  }
+}
+
+/* ---------- Quotation ➜ job order ➜ invoice, all linked by their numbers ---------- */
+function jobForQuote(quoteNo){
+  if(!quoteNo) return null;
+  return (db.jobOrders||[]).find(j=>String(j.quoteNo||"") === String(quoteNo)) || null;
+}
+function autoJobFromQuote(q){
+  if(!q || String(q.status) !== "Converted" || !q.quoteNo) return null;
+  if(jobForQuote(q.quoteNo)) return null;                /* already converted */
+  const job = {
+    jobNo: nextDocNo("jobOrders","jobNo","J"),
+    quoteNo: q.quoteNo,
+    customer: q.customer || "",
+    plate: q.plate || "",
+    priority: "Normal",
+    status: "Pending",
+    mechanic: "",
+    department: "Repairing",
+    items: q.items || "",
+    total: q.total || "",
+    id: "JO-" + Date.now(),
+    timestamp: nowStamp(),
+  };
+  db.jobOrders.push(job);
+  saveDB();
+  pushRecord("jobOrders", job);
+  return job;
+}
+
+/* ---------- Finished job orders become invoices automatically ---------- */
+function invoiceForJob(jobNo){
+  if(!jobNo) return null;
+  return (db.invoices||[]).find(i=>String(i.jobNo||"") === String(jobNo)) || null;
+}
+const JOB_DONE = ["Completed","Delivered"];
+function autoInvoiceFromJob(job){
+  if(!job || !JOB_DONE.includes(String(job.status)) || !job.jobNo) return null;
+  if(invoiceForJob(job.jobNo)) return null;              /* already invoiced */
+  const samePlate = r => r.plate && job.plate &&
+    String(r.plate).trim().toLowerCase() === String(job.plate).trim().toLowerCase();
+  const veh = (db.vehicles||[]).find(samePlate);
+  /* Carry the price over only from a quotation that was actually agreed,
+     otherwise leave it for the admin to fill in. */
+  const quote = (db.quotations||[]).slice().reverse()
+    .find(q=> samePlate(q) && ["Approved","Converted"].includes(String(q.status)));
+  const inv = {
+    invoiceNo: nextDocNo("invoices","invoiceNo","INV"),
+    jobNo: job.jobNo,
+    customer: job.customer || "",
+    plate: job.plate || "",
+    vehicle: veh ? [veh.make, veh.model].filter(Boolean).join(" ") : "",
+    items: job.items || (quote && quote.items ? String(quote.items) : ""),
+    amount: job.total || (quote && quote.total ? String(quote.total) : ""),
+    status: "Draft",
+    id: "IN-" + Date.now(),
+    timestamp: nowStamp(),
+  };
+  db.invoices.push(inv);
+  saveDB();
+  pushRecord("invoices", inv);
+  return inv;
+}
+
+/* ---------- Toast ---------- */
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove("show"),1600);
+}
+
+/* ---------- Modal ---------- */
+function openModal(html){
+  document.getElementById("modal").innerHTML = html;
+  document.getElementById("modalbg").classList.add("open");
+}
+function closeModal(){ document.getElementById("modalbg").classList.remove("open"); }
+document.getElementById("modalbg").addEventListener("click",e=>{ if(e.target.id==="modalbg") closeModal(); });
+
+/* ---------- Router / render ---------- */
+let currentView = "dashboard";
+function nav(view){ currentView = view; listQuery = ""; render(); }
+
+function render(){
+  renderSidebar();
+  const main = document.getElementById("main");
+  main.innerHTML = "";
+  if(currentView==="dashboard"){ renderDashboard(main); setSyncStatus(); return; }
+  if(currentView==="settings" && PERM.canSettings) return renderSettings(main);
+  if(currentView==="sync") return renderSyncSettings(main);
+  if(String(currentView).indexOf("customer:") === 0) return renderCustomerProfile(main, currentView.slice(9));
+  if(!PERM.cats.includes(currentView)){ currentView="dashboard"; return renderDashboard(main); }
+  renderCategory(main, currentView);
+}
+
+function renderSidebar(){
+  const items = [
+    ["dashboard","📊","Dashboard"],
+    ...Object.entries(CATS).filter(([k])=>PERM.cats.includes(k)).map(([k,v])=>[k,v.icon,v.label]),
+  ];
+  const sb = document.getElementById("sidebar");
+  sb.innerHTML = `
+    <div class="brand"><div class="logo">🔧</div><div>HappyRepairApp<br><span class="rolebadge ${ROLE}">${PERM.label}</span></div></div>
+    <div class="navlabel">Main</div>
+    ${items.map(([k,i,l])=>`<div class="navitem ${currentView===k?'active':''}" onclick="nav('${k}')">${i} ${l}</div>`).join("")}
+    ${PERM.canSettings ? `
+    <div class="navlabel">Admin</div>
+    <div class="navitem ${currentView==='settings'?'active':''}" onclick="nav('settings')">⚙️ Settings</div>` : `
+    <div class="navlabel">Setup</div>
+    <div class="navitem ${currentView==='sync'?'active':''}" onclick="nav('sync')">⚙️ Setup</div>`}
+  `;
+}
+
+function renderDashboard(main){
+  main.innerHTML = `
+    <h1>Welcome, ${db.shop.name||"Owner"}</h1>
+    <p class="sub">Signed in as ${PERM.label} · data stored on this device</p>
+    <div class="grid4">
+      ${Object.entries(CATS).filter(([k])=>PERM.cats.includes(k)).map(([k,v])=>`
+        <div class="card tap" onclick="nav('${k}')"><div class="stat-label">${v.label}</div><div class="stat">${db[k].length}</div></div>
+      `).join("")}
+    </div>
+    <div class="exportbar">
+      <button class="btn-outline" onclick="syncNow(true)">🔄 Sync now</button>
+      <span class="switch" id="syncStatus"></span>
+    </div>
+    <div class="exportbar">
+      ${PERM.canExport ? `
+      <button class="btn-dark" onclick="exportExcel()">⬇ Export to Excel (Downloads)</button>
+      <button class="btn-dark" onclick="shareExcel()">☁ Export &amp; share to Drive…</button>` : ``}
+      ${PERM.canImport ? `
+      <button class="btn-outline" onclick="importExcel()">⬆ Import from Excel file…</button>` : ``}
+      ${PERM.canExport ? `
+      <label class="switch"><input type="checkbox" id="autoExport"> Auto-export a fresh .xlsx after every save</label>` : ``}
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Getting started</h3>
+      ${ROLE==="mechanic" ? `
+      <ol style="color:#334155;line-height:1.8;font-size:14px">
+        <li>Open <b>Job Orders</b> to see the jobs assigned to you — tap <b>Edit</b> to update a job's status as you work (In Progress → Ready for Pickup → Completed).</li>
+        <li>Issue <b>Quotations</b> for customers and register vehicles you receive in <b>Vehicles</b>.</li>
+        <li><b>Invoices</b>, <b>Inventory</b> and <b>Reminders</b> are view-only — check billing status, part stock and upcoming service dates any time.</li>
+        <li>Tap <b>Import from Excel file</b> to load the latest data file the admin shared (e.g. from Google Drive).</li>
+      </ol>` : `
+      <ol style="color:#334155;line-height:1.8;font-size:14px">
+        <li>Open <b>Settings</b> and fill in your shop name, address and tax %.</li>
+        <li>Add customers in <b>Customers</b>, then attach their vehicles in <b>Vehicles</b>.</li>
+        <li>Create quotations, convert to job orders, then generate invoices — every save is timestamped and can be exported to one Excel workbook with a sheet per category.</li>
+        <li>Tap <b>Export &amp; share to Drive</b> and pick Google Drive to upload the workbook — an n8n flow watching that folder can sync it to a master Google Sheet and send stock/reminder alerts.</li>
+      </ol>`}
+    </div>
+  `;
+}
+
+function shopCard(){
+  const s = db.shop || {};
+  return `
+    <div class="card" style="max-width:520px">
+      <h3 style="margin-top:0">🏢 Shop details</h3>
+      <p class="sub" style="margin-top:0">Printed at the top of every quotation and invoice.</p>
+      <div class="field"><label>Shop name</label><input id="s_name" value="${esc(s.name)}"></div>
+      <div class="field"><label>Address</label><textarea id="s_addr">${esc(s.address)}</textarea></div>
+      <div class="field-grid">
+        <div class="field"><label>Phone</label><input id="s_phone" value="${esc(s.phone)}"></div>
+        <div class="field"><label>Email</label><input id="s_email" value="${esc(s.email)}"></div>
+      </div>
+      <div class="field"><label>Currency</label><input id="s_curr" value="${esc(s.currency||'MYR')}"></div>
+      <button class="btn-dark" onclick="saveSettings()">Save shop details</button>
+    </div>`;
+}
+function renderSettings(main){
+  main.innerHTML = `
+    <h1>Settings</h1>
+    <p class="sub">Configure your shop info.</p>
+    ${shopCard()}
+    ${logoCard()}
+    ${syncCard()}
+  `;
+}
+function syncCard(){
+  const c = syncCfg();
+  return `
+    <div class="card" style="max-width:520px;margin-top:16px">
+      <h3 style="margin-top:0">🔄 Live sync (n8n)</h3>
+      <p class="sub" style="margin-top:0">Both apps sync through your n8n server so everyone sees the same data. Leave blank to work offline-only.</p>
+      <div class="field"><label>Sync server URL</label><input id="sy_url" value="${c.url||''}" placeholder="https://n8n.srv978288.hstgr.cloud/webhook"></div>
+      <div class="field"><label>Sync key</label><input id="sy_key" value="${c.key||''}" placeholder="the key set in the n8n workflow"></div>
+      <label class="switch" style="margin-bottom:10px"><input type="checkbox" id="sy_auto" ${c.auto!==false?'checked':''}> Auto-sync every minute</label>
+      <div><button class="btn-dark" onclick="saveSyncSettings()">Save sync settings</button></div>
+    </div>
+  `;
+}
+function renderSyncSettings(main){
+  main.innerHTML = `
+    <h1>Setup</h1>
+    <p class="sub">Enter the same shop details, logo and sync key as the admin app so your documents match.</p>
+    ${shopCard()}
+    ${logoCard()}
+    ${syncCard()}
+  `;
+}
+function saveSyncSettings(){
+  saveSyncCfg({
+    url: val('sy_url').trim(),
+    key: val('sy_key').trim(),
+    auto: document.getElementById('sy_auto').checked,
+  });
+  toast("Sync settings saved");
+  syncNow(true);
+}
+function saveSettings(){
+  db.shop = Object.assign({}, db.shop, {
+    name:val('s_name'), address:val('s_addr'), phone:val('s_phone'),
+    email:val('s_email'), currency:val('s_curr')
+  });
+  saveDB(); toast("Settings saved"); render();
+}
+function val(id){ return document.getElementById(id).value; }
+
+/* ---------- Generic category list + form ---------- */
+let listQuery = "", listCtx = null;
+function recordMatches(r, q){
+  if(!q) return true;
+  const hay = [r.timestamp, ...Object.values(r)].join(" ").toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(t=>hay.includes(t));
+}
+function rowsHtml(){
+  const {cat, cols, writable, canPdf} = listCtx;
+  const rows = db[cat].filter(r=>recordMatches(r, listQuery)).reverse();
+  if(!rows.length) return `<tr><td colspan="99" class="empty">No matches for “${esc(listQuery)}”.</td></tr>`;
+  return rows.map(r=>`
+    <tr>
+      <td data-label="Date/Time">${esc(r.timestamp)}</td>
+      ${cols.map(f=>{
+        const v = r[f] ?? "";
+        const cls = (v===""?"blank-cell":"") + (f==="plate"?" key-cell":"");
+        const shown = f==="status" ? statusPill(v)
+                    : f==="items" ? esc(v).replace(/\n/g,"<br>")
+                    : esc(v);
+        return `<td data-label="${f}" class="${cls.trim()}">${shown}</td>`;
+      }).join("")}
+      ${writable||PERM.canDelete||canPdf?`<td class="row-actions" style="white-space:nowrap">
+        ${cat==="customers"?`<button class="btn-send btn-sm" onclick="nav('customer:${r.id}')">📋 Profile</button>`:``}
+        ${canPdf?`<button class="btn-send btn-sm" onclick="sharePdf('${cat}','${r.id}')">📄 Send PDF</button>`:``}
+        ${writable?`<button class="btn-outline btn-sm" onclick="openForm('${cat}','${r.id}')">Edit</button>`:``}
+        ${PERM.canDelete?`<button class="btn-danger btn-sm" onclick="deleteRecord('${cat}','${r.id}')">Delete</button>`:``}
+      </td>`:``}
+    </tr>`).join("");
+}
+function applySearch(v){
+  listQuery = v;
+  const box = document.getElementById("rowsbox");
+  if(box) box.innerHTML = rowsHtml();
+}
+
+/* ---------- One document, printed in full ---------- */
+function docBlock(o){
+  const items = parseItems(o.items);
+  const cur = shopCurrency();
+  return `
+    <div class="doc">
+      <div class="doc-head">
+        <div>
+          <div class="doc-no">${esc(o.no || "—")}</div>
+          <div class="doc-meta">${[String(o.date||"").slice(0,10), ...(o.meta||[])].filter(Boolean).map(esc).join(" · ")}</div>
+        </div>
+        <div class="doc-right">
+          ${statusPill(o.status)}
+          ${o.pdf ? `<button class="btn-send btn-sm" onclick="${o.pdf}">📄 PDF</button>` : ``}
+        </div>
+      </div>
+      ${items.length ? items.map(i=>`
+        <div class="doc-line"><span>${esc(i.desc || "—")}</span><b>${String(i.amount).trim()!=="" ? money(i.amount) : ""}</b></div>
+      `).join("") : `<div class="doc-line doc-empty"><span>No work lines recorded</span><b></b></div>`}
+      <div class="doc-total"><span>${esc(o.totalLabel)}</span><b>${cur} ${money(o.total)}</b></div>
+    </div>`;
+}
+/* A red rule marks where one document ends and the next begins. */
+function joinDocs(blocks){
+  return blocks.join(`<div class="docsep"><span>next document</span></div>`);
+}
+
+/* ---------- Customer profile: everything about one customer on one page ---------- */
+function renderCustomerProfile(main, id){
+  const c = (db.customers||[]).find(x=>x.id===id);
+  if(!c){ nav("customers"); return; }
+  const mine = arr => (arr||[]).filter(r=>String(r.customer||"").trim() === String(c.name||"").trim());
+  const vehicles = mine(db.vehicles);
+  const quotes = mine(db.quotations).slice().reverse();
+  const jobs = mine(db.jobOrders).slice().reverse();
+  const invoices = mine(db.invoices).slice().reverse();
+  const money2 = n => Number(String(n||"").replace(/[^0-9.\-]/g,"")||0).toFixed(2);
+  const cur = shopCurrency();
+  const billed = invoices.reduce((s,i)=>s + Number(money2(i.amount)), 0);
+  const unpaid = invoices.filter(i=>!STATUS_OK.includes(String(i.status||"").toLowerCase()))
+                         .reduce((s,i)=>s + Number(money2(i.amount)), 0);
+
+  const section = (title, count, body) => `
+    <div class="card" style="margin-bottom:14px">
+      <div class="sec-head"><h3>${title}</h3><span class="count">${count}</span></div>
+      ${body}
+    </div>`;
+  const none = t => `<div class="empty">${t}</div>`;
+
+  main.innerHTML = `
+    <button class="btn-outline btn-sm" style="margin-bottom:12px" onclick="nav('customers')">‹ Back to customers</button>
+    <h1 style="margin-bottom:2px">${esc(c.name)}</h1>
+    <p class="sub" style="margin:0 0 16px">
+      ${[c.phone, c.email, c.address].filter(Boolean).map(esc).join(" · ") || "No contact details yet"}
+    </p>
+
+    <div class="grid4">
+      <div class="card"><div class="stat-label">Vehicles</div><div class="stat">${vehicles.length}</div></div>
+      <div class="card"><div class="stat-label">Jobs done</div><div class="stat">${jobs.filter(j=>STATUS_OK.includes(String(j.status||"").toLowerCase())).length}</div></div>
+      <div class="card"><div class="stat-label">Total billed</div><div class="stat" style="font-size:20px">${cur} ${money2(billed)}</div></div>
+      <div class="card"><div class="stat-label">Outstanding</div><div class="stat" style="font-size:20px;color:${unpaid>0?'var(--red)':'var(--green)'}">${cur} ${money2(unpaid)}</div></div>
+    </div>
+
+    ${section("🚗 Vehicles", vehicles.length, vehicles.length ? `
+      <div class="tablewrap"><table>
+        <thead><tr><th>plate</th><th>vehicle</th><th>last service</th><th>mileage</th><th>interval</th><th>next due</th></tr></thead>
+        <tbody>${vehicles.map(v=>{
+          const d = serviceDue(v);
+          const iv = [v.intervalMonths?v.intervalMonths+" mth":"", v.intervalKm?Number(v.intervalKm).toLocaleString()+" km":""].filter(Boolean).join(" / ");
+          const next = d.date
+            ? `<span class="pill ${d.state}">${esc(d.date)}${d.days<0?` · ${Math.abs(d.days)}d overdue`:d.days<=30?` · in ${d.days}d`:``}</span>`
+            : (d.km ? `at ${d.km.toLocaleString()} km` : "—");
+          return `<tr>
+            <td data-label="plate" class="key-cell">${esc(v.plate)}</td>
+            <td data-label="vehicle">${esc([v.make,v.model,v.year].filter(Boolean).join(" "))}</td>
+            <td data-label="last service">${esc(v.lastService||"—")}</td>
+            <td data-label="mileage">${v.mileage?esc(Number(v.mileage).toLocaleString())+" km":"—"}</td>
+            <td data-label="interval">${esc(iv||"—")}</td>
+            <td data-label="next due">${next}</td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table></div>` : none("No vehicles registered for this customer yet."))}
+
+    ${section("🔧 Service history", jobs.length, jobs.length
+      ? joinDocs(jobs.map(j=>docBlock({
+          no: j.jobNo, date: j.timestamp, status: j.status, items: j.items,
+          meta: [j.plate, j.mechanic ? "Mechanic: " + j.mechanic : "", j.department,
+                 j.quoteNo ? "From " + j.quoteNo : ""],
+          totalLabel: "Job total", total: j.total })))
+      : none("No jobs recorded for this customer yet."))}
+
+    ${section("💲 Quotations", quotes.length, quotes.length
+      ? joinDocs(quotes.map(q=>docBlock({
+          no: q.quoteNo, date: q.timestamp, status: q.status, items: q.items,
+          meta: [q.plate, q.validUntil ? "Valid until " + q.validUntil : ""],
+          totalLabel: "Quotation total", total: q.total,
+          pdf: `sharePdf('quotations','${q.id}')` })))
+      : none("No quotations issued to this customer yet."))}
+
+    ${section("🧾 Invoices", invoices.length, invoices.length
+      ? joinDocs(invoices.map(i=>docBlock({
+          no: i.invoiceNo, date: i.timestamp, status: i.status, items: i.items,
+          meta: [i.plate, i.vehicle, i.jobNo ? "Job " + i.jobNo : ""],
+          totalLabel: "Amount", total: i.amount,
+          pdf: `sharePdf('invoices','${i.id}')` })))
+      : none("No invoices issued to this customer yet."))}
+  `;
+}
+
+function renderCategory(main, cat){
+  const meta = CATS[cat];
+  const records = db[cat];
+  const writable = canWrite(cat);
+  /* The plate is how staff recognise a record at a glance, so it sits right
+     after the date/time instead of buried mid-row. */
+  const cols = meta.fields.slice();
+  const pi = cols.indexOf("plate");
+  if(pi > 0) cols.unshift(cols.splice(pi,1)[0]);
+  /* Mechanics cannot edit invoices but must still be able to send them. */
+  const canPdf = (cat === "quotations" || cat === "invoices");
+  listCtx = {cat, cols, writable, canPdf};
+  main.innerHTML = `
+    <div class="toolbar">
+      <div>
+        <h1 style="margin-bottom:2px">${meta.label}</h1>
+        <p class="sub" style="margin:0">${records.length} record(s) · saved with date/time stamp</p>
+      </div>
+      ${writable ? `<button class="btn-dark" onclick="openForm('${cat}')">+ New ${meta.label.replace(/s$/,'')}</button>` : ``}
+    </div>
+    ${!writable ? `<div class="readonly-note">👁 View-only${canPdf?` — you can still send the PDF`:``} — ask the admin to make changes here.</div>` : ``}
+    <div class="card">
+      ${records.length===0 ? `<div class="empty">No ${meta.label.toLowerCase()} yet.${writable ? ' Click "+ New" to add one.' : ''}</div>` : `
+      <div class="field" style="margin-bottom:12px">
+        <input id="listsearch" placeholder="🔎 Search ${meta.label.toLowerCase()}…" value="${esc(listQuery)}" oninput="applySearch(this.value)">
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Date/Time</th>${cols.map(f=>`<th>${f}</th>`).join("")}${writable||PERM.canDelete||canPdf?`<th></th>`:``}</tr></thead>
+        <tbody id="rowsbox">${rowsHtml()}</tbody>
+      </table></div>`}
+    </div>
+  `;
+}
+
+function openForm(cat, editId){
+  if(!canWrite(cat)) return;
+  const meta = CATS[cat];
+  const existing = editId ? db[cat].find(r=>r.id===editId) : null;
+  const options = {};
+  if(cat==="vehicles" || cat==="quotations" || cat==="jobOrders" || cat==="invoices" || cat==="reminders"){
+    options.customerList = db.customers.map(c=>c.name);
+    if(existing && existing.customer && !options.customerList.includes(existing.customer)){
+      options.customerList.push(existing.customer);
+    }
+  }
+  const cur = f => existing ? (existing[f] ?? "") : "";
+  const sel = (f,opts) => `<div class="field"><label>${f}</label><select id="f_${f}">
+      ${opts.map(o=>`<option ${cur(f)===o?'selected':''}>${o}</option>`).join("")}
+    </select></div>`;
+  const fieldsHtml = meta.fields.map(f=>{
+    if(f==="customer" && options.customerList){
+      return `<div class="field"><label>${f}</label>
+        <select id="f_${f}" onchange="customerPicked()">
+          <option value="">Pick customer</option>
+          ${options.customerList.map(n=>`<option ${cur(f)===n?'selected':''}>${n}</option>`).join("")}
+        </select></div>`;
+    }
+    if(f==="mechanic" && cat==="jobOrders"){
+      const names = mechanicNames(existing ? existing.mechanic : "");
+      return `<div class="field"><label>mechanic</label>
+        <div style="display:flex;gap:6px;align-items:stretch">
+          <select id="f_mechanic" style="flex:1">
+            <option value="">Pick mechanic</option>
+            ${names.map(n=>`<option ${cur(f)===n?'selected':''}>${n}</option>`).join("")}
+          </select>
+          <button type="button" class="btn-outline btn-sm" onclick="addMechanicName()" style="white-space:nowrap">+ Add name</button>
+        </div></div>`;
+    }
+    if(f==="plate" && cat!=="vehicles"){
+      const owner = existing ? (existing.customer||"") : "";
+      const plates = plateList(cur(f), owner);
+      return `<div class="field"><label>plate</label>
+        <select id="f_plate" onchange="platePicked()">${plateOptionsHtml(cur(f), owner)}</select>
+        <div id="platehint" style="font-size:11.5px;color:var(--muted);margin-top:4px">${plates.length?``:`No vehicles yet — add one under Vehicles first`}</div></div>`;
+    }
+    if(f==="items"){
+      const rows = parseItems(cur(f));
+      return `<div class="field" style="grid-column:1/-1"><label>description of work</label>
+        <input type="hidden" id="f_items" value="${esc(cur(f))}">
+        <div id="itemrows">${(rows.length?rows:[null]).map(itemRowHtml).join("")}</div>
+        <button type="button" class="btn-outline btn-sm" style="margin-top:6px" onclick="addItemRow()">+ Add description</button></div>`;
+    }
+    if(f==="total" || (f==="amount" && cat==="invoices")){
+      return `<div class="field"><label>${f}</label>
+        <input id="f_${f}" type="number" inputmode="decimal" step="0.01" value="${esc(cur(f))}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Adds up the lines above — edit if you need to</div></div>`;
+    }
+    if(f==="invoiceNo" && cat==="invoices"){
+      const v = existing ? cur(f) : nextDocNo("invoices","invoiceNo","INV");
+      return `<div class="field"><label>invoiceNo</label>
+        <input id="f_invoiceNo" value="${String(v).replace(/"/g,'&quot;')}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Auto-numbered — edit if you need to</div></div>`;
+    }
+    if(f==="quoteNo" && cat==="quotations"){
+      const v = existing ? cur(f) : nextDocNo("quotations","quoteNo","Q");
+      return `<div class="field"><label>quoteNo</label>
+        <input id="f_quoteNo" value="${String(v).replace(/"/g,'&quot;')}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Auto-numbered — edit if you need to</div></div>`;
+    }
+    if(f==="lastService" || f==="dueDate"){
+      return `<div class="field"><label>${f}</label><input id="f_${f}" type="date" value="${esc(cur(f))}"></div>`;
+    }
+    if(f==="mileage" || f==="intervalKm" || f==="intervalMonths"){
+      const hint = f==="mileage" ? "km on the odometer at the last service"
+                 : f==="intervalMonths" ? "optional — service every N months"
+                 : "optional — service every N km";
+      return `<div class="field"><label>${f}</label>
+        <input id="f_${f}" type="number" inputmode="numeric" value="${esc(cur(f))}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${hint}</div></div>`;
+    }
+    if(f==="validUntil"){
+      const v = existing ? cur(f) : dateInDays(7);
+      return `<div class="field"><label>validUntil</label>
+        <input id="f_validUntil" type="date" value="${String(v).replace(/"/g,'&quot;')}">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Defaults to one week from today</div></div>`;
+    }
+    if(f==="department") return sel(f,["Repairing","Painting"]);
+    if(f==="status" && cat==="quotations") return sel(f,["Draft","Sent","Approved","Declined","Converted"]);
+    if(f==="status" && cat==="jobOrders") return sel(f,["Pending","In Progress","Awaiting Parts","Ready for Pickup","Completed","Delivered"]);
+    if(f==="status" && cat==="invoices") return sel(f,["Draft","Sent","Paid","Overdue"]);
+    if(f==="priority") return sel(f,["Normal","Urgent"]);
+    if(f==="notes" || f==="services"){
+      return `<div class="field"><label>${f}</label><textarea id="f_${f}">${cur(f)}</textarea></div>`;
+    }
+    return `<div class="field"><label>${f}</label><input id="f_${f}" value="${String(cur(f)).replace(/"/g,'&quot;')}"></div>`;
+  }).join("");
+
+  openModal(`
+    <h2>${existing?'Edit':'New'} ${meta.label.replace(/s$/,'')}</h2>
+    <div class="field-grid">${fieldsHtml}</div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn-dark" onclick="submitForm('${cat}','${editId||''}')">Save</button>
+    </div>
+  `);
+}
+function customerPicked(){
+  const c = document.getElementById("f_customer");
+  const p = document.getElementById("f_plate");
+  if(!c || !p) return;
+  const keep = p.value;
+  p.innerHTML = plateOptionsHtml(keep, c.value);
+  if(p.value !== keep) p.value = "";
+  const hint = document.getElementById("platehint");
+  if(hint){
+    const n = plateList(null, c.value).length;
+    hint.textContent = !n ? (c.value ? "No vehicle registered to this customer yet — add it under Vehicles"
+                                     : "No vehicles yet — add one under Vehicles first") : "";
+  }
+}
+function platePicked(){
+  const p = document.getElementById("f_plate");
+  const c = document.getElementById("f_customer");
+  if(!p || !c || c.value) return;
+  const veh = (db.vehicles||[]).find(v=>v.plate === p.value);
+  if(veh && veh.customer && [...c.options].some(o=>o.value === veh.customer)) c.value = veh.customer;
+}
+function submitForm(cat, editId){
+  const meta = CATS[cat];
+  const obj = {};
+  syncItems();
+  meta.fields.forEach(f=>{ const el=document.getElementById("f_"+f); if(el) obj[f]=el.value; });
+  if(editId) updateRecord(cat, editId, obj);
+  else addRecord(cat, obj);
+  closeModal();
+}
+
+/* ---------- Swipe down on any page to refresh ---------- */
+(function pullToRefresh(){
+  const ind = document.getElementById("ptr");
+  let startY = 0, dist = 0, tracking = false, busy = false;
+  const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+  const hide = () => { ind.classList.remove("show"); ind.style.transform = ""; };
+  document.addEventListener("touchstart", e=>{
+    if(busy || !atTop() || e.touches.length !== 1) return;
+    startY = e.touches[0].clientY; dist = 0; tracking = true;
+  }, {passive:true});
+  document.addEventListener("touchmove", e=>{
+    if(!tracking) return;
+    dist = e.touches[0].clientY - startY;
+    if(dist <= 0 || !atTop()){ tracking = false; hide(); return; }
+    const pull = Math.min(dist * 0.5, 56);
+    ind.classList.add("show");
+    ind.style.transform = "translate(-50%," + (pull - 46) + "px)";
+    ind.textContent = dist > 90 ? "↑ Release to refresh" : "↓ Pull to refresh";
+  }, {passive:true});
+  document.addEventListener("touchend", ()=>{
+    if(!tracking){ hide(); return; }
+    tracking = false;
+    if(dist > 90){
+      busy = true;
+      ind.classList.add("show");
+      ind.style.transform = "translate(-50%,0)";
+      ind.textContent = "Refreshing…";
+      Promise.resolve(syncConfigured() ? syncNow(true) : null).then(()=>{
+        if(!syncConfigured()){ render(); toast("Refreshed"); }
+      }).catch(()=>{}).then(()=>{ busy = false; hide(); });
+    } else hide();
+  }, {passive:true});
+})();
+
+/* ---------- init ---------- */
+render();
+if(syncConfigured()) syncNow(false);
+</script>
+</body>
+</html>
