@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- MH monogram with three stars, scaled into the adaptive-icon safe zone -->
+    <group
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="24"
+        android:translateY="24.75">
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M60,7 L61.71,11.65 L66.66,11.84 L62.76,14.9 L64.12,19.66 L60,16.9 L55.88,19.66 L57.24,14.9 L53.34,11.84 L58.29,11.65 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M42,14 L43.23,17.3 L46.76,17.45 L44,19.65 L44.94,23.05 L42,21.1 L39.06,23.05 L40,19.65 L37.24,17.45 L40.77,17.3 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M78,14 L79.23,17.3 L82.76,17.45 L80,19.65 L80.94,23.05 L78,21.1 L75.06,23.05 L76,19.65 L73.24,17.45 L76.77,17.3 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M22,30 L32,30 L32,110 L22,110 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M88,30 L98,30 L98,110 L88,110 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M32,30 L46,30 L60,44 L74,30 L88,30 L60,58 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M32,44 L60,72 L88,44 L88,54 L60,82 L32,54 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M42,70 L52,80 L52,101 L42,101 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M68,80 L78,70 L78,108 L68,108 Z" />
+        <path
+            android:fillColor="#7D3C98"
+            android:pathData="M42,85 L78,85 L78,94 L42,94 Z" />
+    </group>
+</vector>
