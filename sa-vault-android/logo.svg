@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="door" cx="0.38" cy="0.32" r="0.9">
+      <stop offset="0" stop-color="#33497E"/>
+      <stop offset="0.6" stop-color="#22345F"/>
+      <stop offset="1" stop-color="#131F3E"/>
+    </radialGradient>
+    <linearGradient id="spoke" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7C90BC"/>
+      <stop offset="0.5" stop-color="#55699A"/>
+      <stop offset="1" stop-color="#3C4F7F"/>
+    </linearGradient>
+    <radialGradient id="port" cx="0.42" cy="0.36" r="0.9">
+      <stop offset="0" stop-color="#1B2C55"/>
+      <stop offset="1" stop-color="#0C1730"/>
+    </radialGradient>
+  </defs>
+
+  <!-- door -->
+  <circle cx="256" cy="256" r="212" fill="url(#door)" stroke="#0D1730" stroke-width="8"/>
+  <circle cx="256" cy="256" r="192" fill="none" stroke="#41598C" stroke-width="10"/>
+
+  <!-- rivets -->
+  <g fill="#8DA0C9" stroke="#16254A" stroke-width="3">
+    <circle cx="256" cy="82" r="8"/>
+    <circle cx="379" cy="133" r="8"/>
+    <circle cx="430" cy="256" r="8"/>
+    <circle cx="379" cy="379" r="8"/>
+    <circle cx="256" cy="430" r="8"/>
+    <circle cx="133" cy="379" r="8"/>
+    <circle cx="82" cy="256" r="8"/>
+    <circle cx="133" cy="133" r="8"/>
+  </g>
+
+  <!-- engraved sound waves -->
+  <g stroke="#3E5588" stroke-width="9" stroke-linecap="round">
+    <line x1="118" y1="238" x2="118" y2="274"/>
+    <line x1="140" y1="226" x2="140" y2="286"/>
+    <line x1="162" y1="242" x2="162" y2="270"/>
+    <line x1="394" y1="238" x2="394" y2="274"/>
+    <line x1="372" y1="226" x2="372" y2="286"/>
+    <line x1="350" y1="242" x2="350" y2="270"/>
+  </g>
+
+  <!-- spoke handle wheel -->
+  <g>
+    <rect x="242" y="14" width="28" height="484" rx="14" fill="url(#spoke)" stroke="#1A2A50" stroke-width="5"/>
+    <rect x="242" y="14" width="28" height="484" rx="14" fill="url(#spoke)" stroke="#1A2A50" stroke-width="5" transform="rotate(60 256 256)"/>
+    <rect x="242" y="14" width="28" height="484" rx="14" fill="url(#spoke)" stroke="#1A2A50" stroke-width="5" transform="rotate(120 256 256)"/>
+  </g>
+
+  <!-- porthole -->
+  <circle cx="256" cy="256" r="100" fill="url(#port)" stroke="#5C74A6" stroke-width="12"/>
+  <circle cx="256" cy="256" r="82" fill="none" stroke="#2C4372" stroke-width="4"/>
+
+  <!-- microphone -->
+  <g transform="translate(196,193) scale(5)">
+    <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" fill="#F4F6FA"/>
+    <line x1="8.5" y1="21" x2="15.5" y2="21" stroke="#F4F6FA" stroke-width="1.6" stroke-linecap="round"/>
+  </g>
+</svg>
