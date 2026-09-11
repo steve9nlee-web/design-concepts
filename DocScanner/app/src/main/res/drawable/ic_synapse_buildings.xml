@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synapse Asia mark: three towers with connected network nodes -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Connecting lines between the node circles -->
+    <path
+        android:pathData="M5.75,9 L11.75,5 L17.75,7.5 M5.75,9 L17.75,7.5"
+        android:strokeColor="#1E3A5F"
+        android:strokeWidth="0.9"
+        android:strokeLineCap="round" />
+
+    <!-- Left tower -->
+    <path
+        android:fillColor="#1E3A5F"
+        android:pathData="M4,10.5 h3.5 v10.5 h-3.5 z" />
+    <!-- Middle tower (tallest) -->
+    <path
+        android:fillColor="#1E3A5F"
+        android:pathData="M10,6.5 h3.5 v14.5 h-3.5 z" />
+    <!-- Right tower -->
+    <path
+        android:fillColor="#2C6E8A"
+        android:pathData="M16,9 h3.5 v12 h-3.5 z" />
+
+    <!-- Node circles: navy ring, white core -->
+    <path
+        android:fillColor="#1E3A5F"
+        android:pathData="M4.15,9 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,9 a0.75,0.75 0 1,0 1.5,0 a0.75,0.75 0 1,0 -1.5,0" />
+    <path
+        android:fillColor="#1E3A5F"
+        android:pathData="M9.85,5 a1.9,1.9 0 1,0 3.8,0 a1.9,1.9 0 1,0 -3.8,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10.85,5 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0" />
+    <path
+        android:fillColor="#1E3A5F"
+        android:pathData="M16.15,7.5 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17,7.5 a0.75,0.75 0 1,0 1.5,0 a0.75,0.75 0 1,0 -1.5,0" />
+
+    <!-- Window dots -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5.3,13 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M5.3,15 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M5.3,17 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M5.3,19 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11.3,9 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M11.3,11 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M11.3,13 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M11.3,15 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17.3,11.5 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M17.3,13.5 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0 M17.3,15.5 a0.45,0.45 0 1,0 0.9,0 a0.45,0.45 0 1,0 -0.9,0" />
+
+    <!-- Base line -->
+    <path
+        android:fillColor="#1E3A5F"
+        android:pathData="M2.5,21 h19 a0.75,0.75 0 0 1 0,1.5 h-19 a0.75,0.75 0 0 1 0,-1.5 z" />
+</vector>

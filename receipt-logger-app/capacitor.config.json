@@ -1,0 +1,8 @@
+{
+  "appId": "com.receiptlogger.app",
+  "appName": "Receipt Logger",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  }
+}

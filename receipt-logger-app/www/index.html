@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Receipt Logger</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --ink: #1c2733;
+    --muted: #64748b;
+    --accent: #0f6bd7;
+    --accent-ink: #ffffff;
+    --line: #dbe2ea;
+    --ok: #15803d;
+    --err: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Roboto, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding-bottom: 30px;
+  }
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 { margin: 0; font-size: 1.1rem; }
+  #settingsBtn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.3rem;
+    padding: 4px 8px;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 14px; display: grid; gap: 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .card h2 {
+    margin: 0 0 10px;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .photo-box {
+    background: #0b1220;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: .9rem;
+  }
+  #snapshot { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  button:disabled { opacity: .45; }
+  .choices { display: flex; gap: 10px; flex-wrap: wrap; }
+  .choices label {
+    flex: 1 1 90px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 8px;
+    text-align: center;
+    user-select: none;
+  }
+  .choices input { display: none; }
+  .choices label:has(input:checked) {
+    border-color: var(--accent);
+    background: #eaf2fd;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  textarea, input[type=text] {
+    width: 100%;
+    font: inherit;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+  }
+  textarea { resize: vertical; min-height: 48px; }
+  #photoTime { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+  #status { display: none; border-radius: 10px; padding: 12px 14px; font-size: .95rem; margin: 10px 0 0; }
+  #status.ok { display: block; background: #ecfdf3; border: 1px solid #bbe7c8; color: var(--ok); }
+  #status.err { display: block; background: #fef2f2; border: 1px solid #f3c1c1; color: var(--err); }
+  #settingsCard { display: none; }
+  #serverState { font-size: .82rem; margin-top: 8px; }
+  #serverState.on { color: var(--ok); }
+  #serverState.off { color: var(--err); }
+</style>
+</head>
+<body>
+<header>
+  <h1>&#128230; Receipt Logger</h1>
+  <button id="settingsBtn" title="Server settings">&#9881;&#65039;</button>
+</header>
+<main>
+  <div class="card" id="settingsCard">
+    <h2>Server on your PC</h2>
+    <input type="text" id="serverUrl" placeholder="http://192.168.1.44:3456">
+    <div class="btn-row">
+      <button class="primary" id="saveServerBtn">Save &amp; test connection</button>
+    </div>
+    <div id="serverState"></div>
+  </div>
+
+  <div class="card">
+    <h2>1 &middot; Take photo of item received</h2>
+    <div class="photo-box">
+      <img id="snapshot" alt="Captured photo">
+      <span id="photoPlaceholder">No photo yet</span>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="captureBtn" style="flex:1">&#128247; Take Photo</button>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+    </div>
+    <div id="photoTime"></div>
+  </div>
+
+  <div class="card">
+    <h2>2 &middot; Acknowledgment of receipt</h2>
+    <div class="choices">
+      <label><input type="radio" name="receiptType" value="Courier"><span>&#128666;<br>Courier</span></label>
+      <label><input type="radio" name="receiptType" value="Walk-in"><span>&#128694;<br>Walk-in</span></label>
+      <label><input type="radio" name="receiptType" value="Collect"><span>&#128230;<br>Collect</span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3 &middot; Send to department</h2>
+    <div class="choices">
+      <label><input type="radio" name="department" value="Microbiology"><span>&#129440;<br>Microbiology</span></label>
+      <label><input type="radio" name="department" value="Scientific"><span>&#128300;<br>Scientific</span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4 &middot; Remarks (optional)</h2>
+    <textarea id="remarks" placeholder="e.g. sender name, waybill no., condition"></textarea>
+    <div class="btn-row">
+      <button class="primary" id="saveBtn" disabled style="flex:1">Save to Excel (Google Drive)</button>
+    </div>
+    <p id="status"></p>
+  </div>
+</main>
+
+<script>
+const DEFAULT_SERVER = 'http://192.168.1.44:3456';
+
+const snapshot = document.getElementById('snapshot');
+const placeholder = document.getElementById('photoPlaceholder');
+const captureBtn = document.getElementById('captureBtn');
+const fileInput = document.getElementById('fileInput');
+const saveBtn = document.getElementById('saveBtn');
+const statusEl = document.getElementById('status');
+const photoTimeEl = document.getElementById('photoTime');
+const settingsCard = document.getElementById('settingsCard');
+const serverUrlInput = document.getElementById('serverUrl');
+const serverState = document.getElementById('serverState');
+
+let photoData = null;
+let takenAt = null;
+
+function serverUrl() {
+  return (localStorage.getItem('serverUrl') || DEFAULT_SERVER).replace(/\/+$/, '');
+}
+serverUrlInput.value = serverUrl();
+
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  settingsCard.style.display = settingsCard.style.display === 'block' ? 'none' : 'block';
+});
+
+async function testConnection() {
+  serverState.textContent = 'Checking connection…';
+  serverState.className = '';
+  try {
+    const res = await fetch(serverUrl() + '/api/records', { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(res.statusText);
+    serverState.textContent = '✅ Connected to ' + serverUrl();
+    serverState.className = 'on';
+    return true;
+  } catch (e) {
+    serverState.textContent = '❌ Cannot reach ' + serverUrl() +
+      ' — check the PC is on, the server is running, and both devices are on the same Wi-Fi.';
+    serverState.className = 'off';
+    settingsCard.style.display = 'block';
+    return false;
+  }
+}
+
+document.getElementById('saveServerBtn').addEventListener('click', () => {
+  localStorage.setItem('serverUrl', serverUrlInput.value.trim() || DEFAULT_SERVER);
+  testConnection();
+});
+
+function showPhoto(dataUrl, when) {
+  photoData = dataUrl;
+  takenAt = when;
+  snapshot.src = dataUrl;
+  snapshot.style.display = 'block';
+  placeholder.style.display = 'none';
+  captureBtn.textContent = '🔄 Retake Photo';
+  photoTimeEl.textContent = 'Photo taken (date received): ' + when.toLocaleString();
+  updateSaveState();
+}
+
+captureBtn.addEventListener('click', async () => {
+  const cap = window.Capacitor;
+  if (cap && cap.Plugins && cap.Plugins.Camera) {
+    try {
+      const photo = await cap.Plugins.Camera.getPhoto({
+        quality: 85,
+        resultType: 'dataUrl',
+        source: 'CAMERA',
+        saveToGallery: false,
+        correctOrientation: true,
+        width: 1600
+      });
+      showPhoto(photo.dataUrl, new Date());
+    } catch (e) {
+      if (!/cancel/i.test(String(e.message || e))) {
+        setStatus('⚠ Camera error: ' + (e.message || e), false);
+      }
+    }
+  } else {
+    fileInput.click(); // browser fallback
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => showPhoto(reader.result, new Date(file.lastModified));
+  reader.readAsDataURL(file);
+});
+
+document.querySelectorAll('input[type=radio]').forEach(r =>
+  r.addEventListener('change', updateSaveState));
+
+function selected(name) {
+  const el = document.querySelector('input[name=' + name + ']:checked');
+  return el ? el.value : null;
+}
+
+function updateSaveState() {
+  saveBtn.disabled = !(photoData && selected('receiptType') && selected('department'));
+}
+
+function setStatus(msg, ok) {
+  statusEl.textContent = msg;
+  statusEl.className = ok ? 'ok' : 'err';
+}
+
+saveBtn.addEventListener('click', async () => {
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  try {
+    const res = await fetch(serverUrl() + '/api/records', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photo: photoData,
+        takenAt: takenAt.toISOString(),
+        receiptType: selected('receiptType'),
+        department: selected('department'),
+        remarks: document.getElementById('remarks').value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    setStatus('✅ Saved record #' + data.no + ' — ' + data.dateReceived + ' ' + data.timeReceived +
+      ', ' + data.receiptType + ' → ' + data.department + '. Excel updated in Google Drive.', true);
+    photoData = null;
+    takenAt = null;
+    snapshot.style.display = 'none';
+    placeholder.style.display = 'inline';
+    captureBtn.textContent = '📷 Take Photo';
+    photoTimeEl.textContent = '';
+    document.getElementById('remarks').value = '';
+    document.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+    updateSaveState();
+  } catch (e) {
+    setStatus('⚠ ' + e.message + ' — record NOT saved. Check server connection in ⚙️ settings.', false);
+    updateSaveState();
+  } finally {
+    saveBtn.textContent = 'Save to Excel (Google Drive)';
+  }
+});
+
+testConnection();
+</script>
+</body>
+</html>

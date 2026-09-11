@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt Logger</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --ink: #1c2733;
+    --muted: #64748b;
+    --accent: #0f6bd7;
+    --accent-ink: #ffffff;
+    --line: #dbe2ea;
+    --ok: #15803d;
+    --err: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  header h1 { margin: 0; font-size: 1.15rem; }
+  header span { color: var(--muted); font-size: .85rem; }
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px;
+    display: grid;
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card h2 {
+    margin: 0 0 10px;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .camera-box {
+    position: relative;
+    background: #0b1220;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  video, #snapshot {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #snapshot { display: none; }
+  #cameraMsg {
+    position: absolute;
+    color: #94a3b8;
+    font-size: .9rem;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+  }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .choices { display: flex; gap: 10px; flex-wrap: wrap; }
+  .choices label {
+    flex: 1 1 100px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .choices input { display: none; }
+  .choices input:checked + span { font-weight: 700; }
+  .choices label:has(input:checked) {
+    border-color: var(--accent);
+    background: #eaf2fd;
+    color: var(--accent);
+  }
+  textarea {
+    width: 100%;
+    font: inherit;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    resize: vertical;
+    min-height: 52px;
+  }
+  #photoTime { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+  #status {
+    display: none;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: .95rem;
+  }
+  #status.ok { display: block; background: #ecfdf3; border: 1px solid #bbe7c8; color: var(--ok); }
+  #status.err { display: block; background: #fef2f2; border: 1px solid #f3c1c1; color: var(--err); }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  td img { height: 34px; border-radius: 5px; display: block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Receipt Logger</h1>
+  <span>photo &rarr; acknowledgment &rarr; department &rarr; Excel</span>
+</header>
+<main>
+  <div class="card">
+    <h2>1 &middot; Take photo of item received</h2>
+    <div class="camera-box">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="snapshot" alt="Captured photo">
+      <div id="cameraMsg">Starting camera&hellip;</div>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="captureBtn" disabled>&#128247; Take Photo</button>
+      <button id="retakeBtn" style="display:none">&#8634; Retake</button>
+      <button id="uploadBtn">Choose from file</button>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+    </div>
+    <div id="photoTime"></div>
+  </div>
+
+  <div class="card">
+    <h2>2 &middot; Acknowledgment of receipt</h2>
+    <div class="choices" id="receiptChoices">
+      <label><input type="radio" name="receiptType" value="Courier"><span>&#128666; Courier</span></label>
+      <label><input type="radio" name="receiptType" value="Walk-in"><span>&#128694; Walk-in</span></label>
+      <label><input type="radio" name="receiptType" value="Collect"><span>&#128230; Collect</span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3 &middot; Send to department</h2>
+    <div class="choices" id="deptChoices">
+      <label><input type="radio" name="department" value="Microbiology"><span>&#129440; Microbiology</span></label>
+      <label><input type="radio" name="department" value="Scientific"><span>&#128300; Scientific</span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4 &middot; Remarks (optional)</h2>
+    <textarea id="remarks" placeholder="e.g. sender name, waybill no., condition of package"></textarea>
+    <div class="btn-row">
+      <button class="primary" id="saveBtn" disabled style="flex:1">Save to Excel</button>
+    </div>
+    <p id="status"></p>
+  </div>
+
+  <div class="card">
+    <h2>Recent records (records.xlsx)</h2>
+    <div class="table-wrap">
+      <table id="recordsTable">
+        <thead>
+          <tr><th>No.</th><th>Date Received</th><th>Time</th><th>Acknowledgment</th><th>Department</th><th>Photo</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const video = document.getElementById('video');
+const snapshot = document.getElementById('snapshot');
+const cameraMsg = document.getElementById('cameraMsg');
+const captureBtn = document.getElementById('captureBtn');
+const retakeBtn = document.getElementById('retakeBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+const fileInput = document.getElementById('fileInput');
+const saveBtn = document.getElementById('saveBtn');
+const statusEl = document.getElementById('status');
+const photoTimeEl = document.getElementById('photoTime');
+
+let photoData = null;   // data URL
+let takenAt = null;     // Date the photo was taken = date received
+let stream = null;
+
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    cameraMsg.style.display = 'none';
+    captureBtn.disabled = false;
+  } catch (e) {
+    cameraMsg.textContent = 'Camera unavailable (' + e.name + '). Use "Choose from file" instead.';
+  }
+}
+
+function showPhoto(dataUrl, when) {
+  photoData = dataUrl;
+  takenAt = when;
+  snapshot.src = dataUrl;
+  snapshot.style.display = 'block';
+  video.style.display = 'none';
+  cameraMsg.style.display = 'none';
+  captureBtn.style.display = 'none';
+  retakeBtn.style.display = 'inline-block';
+  photoTimeEl.textContent = 'Photo taken (date received): ' + when.toLocaleString();
+  updateSaveState();
+}
+
+captureBtn.addEventListener('click', () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 960;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  showPhoto(canvas.toDataURL('image/jpeg', 0.9), new Date());
+});
+
+retakeBtn.addEventListener('click', () => {
+  photoData = null;
+  takenAt = null;
+  snapshot.style.display = 'none';
+  retakeBtn.style.display = 'none';
+  captureBtn.style.display = 'inline-block';
+  photoTimeEl.textContent = '';
+  if (stream) {
+    video.style.display = 'block';
+  } else {
+    cameraMsg.style.display = 'block';
+  }
+  updateSaveState();
+});
+
+uploadBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => showPhoto(reader.result, new Date(file.lastModified));
+  reader.readAsDataURL(file);
+});
+
+document.querySelectorAll('input[type=radio]').forEach(r =>
+  r.addEventListener('change', updateSaveState));
+
+function selected(name) {
+  const el = document.querySelector('input[name=' + name + ']:checked');
+  return el ? el.value : null;
+}
+
+function updateSaveState() {
+  saveBtn.disabled = !(photoData && selected('receiptType') && selected('department'));
+}
+
+function setStatus(msg, ok) {
+  statusEl.textContent = msg;
+  statusEl.className = ok ? 'ok' : 'err';
+}
+
+saveBtn.addEventListener('click', async () => {
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/records', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photo: photoData,
+        takenAt: takenAt.toISOString(),
+        receiptType: selected('receiptType'),
+        department: selected('department'),
+        remarks: document.getElementById('remarks').value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    setStatus('✅ Saved as record #' + data.no + ' — ' + data.dateReceived + ' ' +
+      data.timeReceived + ', ' + data.receiptType + ' → ' + data.department, true);
+    document.getElementById('remarks').value = '';
+    document.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+    retakeBtn.click();
+    loadRecords();
+  } catch (e) {
+    setStatus('⚠ ' + e.message, false);
+    updateSaveState();
+  } finally {
+    saveBtn.textContent = 'Save to Excel';
+  }
+});
+
+async function loadRecords() {
+  try {
+    const res = await fetch('/api/records');
+    const data = await res.json();
+    const tbody = document.querySelector('#recordsTable tbody');
+    tbody.innerHTML = '';
+    (data.records || []).slice(0, 10).forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + r.no + '</td><td>' + r.dateReceived + '</td><td>' + r.timeReceived +
+        '</td><td>' + r.receiptType + '</td><td>' + r.department +
+        '</td><td><img src="/photos/' + encodeURIComponent(r.photoFile) + '" alt=""></td>';
+      tbody.appendChild(tr);
+    });
+  } catch (e) { /* table is informational only */ }
+}
+
+startCamera();
+loadRecords();
+</script>
+</body>
+</html>
