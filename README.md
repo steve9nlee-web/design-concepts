@@ -28,6 +28,7 @@ Prototypes, concept pages and early-stage app builds, one folder each. See each 
 | `VehicleRecords/` | Fleet records for cars, motorcycles and vans |
 | `TripLogger/` | Trip logging with auto date/time to Google Sheets |
 | `IdeaCapture/` | Quick idea notes tagged by urgency |
+| `QuotationCalculator/` | Single-file work quotation calculator + sideload APK |
 
 ## Personal
 | Folder | What it is |

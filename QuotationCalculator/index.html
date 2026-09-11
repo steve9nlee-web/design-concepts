@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Work Quotation Calculator</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --card:#ffffff; --ink:#1c2333; --muted:#68738a;
+    --accent:#1f6feb; --accent-soft:#e8f0fe; --line:#e3e8f0;
+    --good:#188653; --total-bg:#10243e; --total-ink:#eaf2ff;
+    color-scheme: light;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.5 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    padding-bottom:40px;
+  }
+  header{
+    background:linear-gradient(135deg,#1f6feb,#12408f); color:#fff;
+    padding:calc(env(safe-area-inset-top, 0px) + 20px) 20px 18px;
+  }
+  header h1{margin:0; font-size:22px; font-weight:700;}
+  header p{margin:4px 0 0; font-size:13px; opacity:.85;}
+  main{max-width:560px; margin:0 auto; padding:14px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(16,36,62,.06);
+  }
+  .card h2{margin:0 0 12px; font-size:15px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  label.lbl{display:block; font-size:14px; font-weight:600; margin-bottom:6px;}
+  label.lbl small{font-weight:400; color:var(--muted);}
+  .seg{display:flex; gap:6px; flex-wrap:wrap;}
+  .seg button{
+    flex:1 1 0; min-width:88px; padding:10px 8px; font-size:14px; font-weight:600;
+    border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--muted);
+    cursor:pointer; transition:all .12s;
+  }
+  .seg button.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
+  .stepper{display:flex; align-items:center; gap:10px;}
+  .stepper button{
+    width:44px; height:44px; font-size:22px; font-weight:700; border-radius:10px;
+    border:1.5px solid var(--line); background:#fff; color:var(--accent); cursor:pointer;
+  }
+  .stepper input{
+    flex:1; text-align:center; font-size:20px; font-weight:700; padding:9px 6px;
+    border:1.5px solid var(--line); border-radius:10px; width:60px;
+  }
+  .stepper input:focus, .rates input:focus{outline:2px solid var(--accent); border-color:var(--accent);}
+  .hint{font-size:12px; color:var(--muted); margin-top:6px;}
+
+  /* Quotation output */
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  td{padding:7px 0; vertical-align:top;}
+  td.amt{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600;}
+  td.desc small{display:block; color:var(--muted); font-size:12px;}
+  tr.section td{
+    padding-top:14px; font-size:12px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--muted); border-bottom:1px solid var(--line);
+  }
+  tr.subtotal td{border-top:1px dashed var(--line); font-weight:700;}
+  tr.discount td{color:var(--good); font-weight:600;}
+  .total{
+    margin-top:14px; background:var(--total-bg); color:var(--total-ink);
+    border-radius:12px; padding:14px 16px; display:flex; align-items:baseline;
+    justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .total .cap{font-size:13px; opacity:.8;}
+  .total .num{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .permo{font-size:12px; color:var(--muted); text-align:right; margin-top:8px;}
+
+  .actions{display:flex; gap:8px; margin-top:12px;}
+  .actions button{
+    flex:1; padding:12px; font-size:14px; font-weight:700; border-radius:10px; cursor:pointer;
+    border:1.5px solid var(--accent); background:var(--accent); color:#fff;
+  }
+  .actions button.ghost{background:#fff; color:var(--accent);}
+
+  /* Rates editor */
+  details.rates{border-top:1px solid var(--line); margin-top:4px; padding-top:8px;}
+  details.rates summary{
+    cursor:pointer; font-size:14px; font-weight:700; color:var(--accent);
+    list-style:none; padding:6px 0;
+  }
+  details.rates summary::-webkit-details-marker{display:none;}
+  details.rates summary::after{content:" ▾";}
+  details.rates[open] summary::after{content:" ▴";}
+  .rates .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0;}
+  .rates .row span{font-size:13px;}
+  .rates input{
+    width:110px; text-align:right; font-size:14px; font-weight:600; padding:7px 8px;
+    border:1.5px solid var(--line); border-radius:8px; font-variant-numeric:tabular-nums;
+  }
+  .rates .rhead{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); padding:12px 0 2px;}
+  .rates .reset{margin-top:10px; width:100%; padding:9px; font-size:13px; font-weight:600;
+    border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--muted); cursor:pointer;}
+  .toast{
+    position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(80px);
+    background:#1c2333; color:#fff; font-size:14px; padding:10px 18px; border-radius:99px;
+    opacity:0; transition:all .25s; pointer-events:none; white-space:nowrap;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Work Quotation Calculator</h1>
+  <p>Price a job by users, connectivity, database, update location &amp; years of use</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>1 · Number of users</h2>
+    <div class="field">
+      <div class="stepper">
+        <button type="button" id="userMinus" aria-label="Fewer users">−</button>
+        <input id="users" type="number" inputmode="numeric" min="1" max="9999" value="5">
+        <button type="button" id="userPlus" aria-label="More users">+</button>
+      </div>
+      <div class="hint" id="userHint"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2 · System type</h2>
+    <div class="field">
+      <label class="lbl">Online or offline?</label>
+      <div class="seg" id="segMode">
+        <button type="button" data-v="offline">Offline<br><small>works without internet</small></button>
+        <button type="button" data-v="online" class="on">Online<br><small>server &amp; internet</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3 · Database</h2>
+    <div class="field">
+      <div class="seg" id="segDb">
+        <button type="button" data-v="none">None<br><small>no stored records</small></button>
+        <button type="button" data-v="local" class="on">Local<br><small>on the device</small></button>
+        <button type="button" data-v="central">Central<br><small>shared server DB</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4 · Updates &amp; data kept on</h2>
+    <div class="field">
+      <div class="seg" id="segStore">
+        <button type="button" data-v="phone" class="on">Phone<br><small>device only</small></button>
+        <button type="button" data-v="cloud">Cloud<br><small>hosted online</small></button>
+        <button type="button" data-v="nas">NAS<br><small>your own server</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5 · Years of use</h2>
+    <div class="field">
+      <div class="stepper">
+        <button type="button" id="yearMinus" aria-label="Fewer years">−</button>
+        <input id="years" type="number" inputmode="numeric" min="1" max="20" value="3">
+        <button type="button" id="yearPlus" aria-label="More years">+</button>
+      </div>
+      <div class="hint" id="yearHint"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Quotation</h2>
+    <table id="quoteTable"></table>
+    <div class="total">
+      <span class="cap">Grand total (<span id="totYears"></span>)</span>
+      <span class="num" id="grandTotal"></span>
+    </div>
+    <div class="permo" id="perUser"></div>
+    <div class="actions">
+      <button type="button" id="btnCopy">Copy quotation</button>
+      <button type="button" id="btnShare" class="ghost">Share</button>
+    </div>
+
+    <details class="rates">
+      <summary>Adjust pricing rates</summary>
+      <div class="row"><span>Currency symbol</span><input id="r_cur" type="text" maxlength="4"></div>
+
+      <div class="rhead">One-time charges</div>
+      <div class="row"><span>Base development fee</span><input id="r_base" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Users included in base</span><input id="r_incl" type="number" inputmode="numeric"></div>
+      <div class="row"><span>Per extra user (one-time)</span><input id="r_puser" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Online setup (server &amp; API)</span><input id="r_online" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Local database setup</span><input id="r_dblocal" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Central database setup</span><input id="r_dbcentral" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Cloud setup</span><input id="r_cloudsetup" type="number" inputmode="decimal"></div>
+      <div class="row"><span>NAS setup</span><input id="r_nassetup" type="number" inputmode="decimal"></div>
+
+      <div class="rhead">Recurring, per year</div>
+      <div class="row"><span>Maintenance &amp; support (% of one-time)</span><input id="r_maint" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Online hosting / yr</span><input id="r_hosting" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Cloud storage &amp; sync / yr</span><input id="r_cloudyr" type="number" inputmode="decimal"></div>
+      <div class="row"><span>NAS care / yr</span><input id="r_nasyr" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Central DB hosting / yr</span><input id="r_dbyr" type="number" inputmode="decimal"></div>
+      <div class="row"><span>Per user / yr (licence)</span><input id="r_puseryr" type="number" inputmode="decimal"></div>
+
+      <div class="rhead">Multi-year discount on recurring</div>
+      <div class="row"><span>% off when 3–4 years</span><input id="r_disc3" type="number" inputmode="decimal"></div>
+      <div class="row"><span>% off when 5+ years</span><input id="r_disc5" type="number" inputmode="decimal"></div>
+
+      <button type="button" class="reset" id="btnReset">Reset rates to defaults</button>
+    </details>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DEFAULT_RATES = {
+    cur: "$",
+    base: 3000,      // base development fee
+    incl: 5,         // users included in base
+    puser: 100,      // one-time per extra user
+    online: 2000,    // online setup (server & API)
+    dblocal: 500,    // local DB setup
+    dbcentral: 1500, // central DB setup
+    cloudsetup: 800, // cloud setup
+    nassetup: 1200,  // NAS setup
+    maint: 15,       // % of one-time subtotal, per year
+    hosting: 600,    // online hosting / yr
+    cloudyr: 480,    // cloud storage / yr
+    nasyr: 200,      // NAS care / yr
+    dbyr: 300,       // central DB hosting / yr
+    puseryr: 20,     // licence per user / yr
+    disc3: 5,        // % off recurring, 3-4 yrs
+    disc5: 10        // % off recurring, 5+ yrs
+  };
+  var RATE_KEYS = Object.keys(DEFAULT_RATES);
+  var LS_KEY = "quote-rates-v1";
+
+  var state = { users: 5, mode: "online", db: "local", store: "phone", years: 3 };
+  var rates = loadRates();
+
+  function loadRates(){
+    var r = {};
+    RATE_KEYS.forEach(function(k){ r[k] = DEFAULT_RATES[k]; });
+    try {
+      var saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+      RATE_KEYS.forEach(function(k){
+        if (k === "cur") { if (typeof saved[k] === "string" && saved[k]) r[k] = saved[k]; }
+        else if (typeof saved[k] === "number" && isFinite(saved[k]) && saved[k] >= 0) r[k] = saved[k];
+      });
+    } catch(e){}
+    return r;
+  }
+  function saveRates(){
+    try { localStorage.setItem(LS_KEY, JSON.stringify(rates)); } catch(e){}
+  }
+
+  function money(n){
+    var s = Math.round(n).toLocaleString("en-US");
+    return rates.cur + s;
+  }
+
+  // ---- quotation math -------------------------------------------------
+  function compute(){
+    var lines = { once: [], yearly: [] };
+    var extraUsers = Math.max(0, state.users - rates.incl);
+
+    lines.once.push(["Base development fee",
+      "includes " + rates.incl + " user" + (rates.incl === 1 ? "" : "s"), rates.base]);
+    if (extraUsers > 0)
+      lines.once.push([extraUsers + " extra user" + (extraUsers === 1 ? "" : "s"),
+        money(rates.puser) + " each, one-time", extraUsers * rates.puser]);
+    if (state.mode === "online")
+      lines.once.push(["Online system setup", "server, accounts & API", rates.online]);
+    if (state.db === "local")
+      lines.once.push(["Local database", "stored on the device", rates.dblocal]);
+    if (state.db === "central")
+      lines.once.push(["Central database setup", "shared server database", rates.dbcentral]);
+    if (state.store === "cloud")
+      lines.once.push(["Cloud setup", "hosted storage & auto-update", rates.cloudsetup]);
+    if (state.store === "nas")
+      lines.once.push(["NAS setup", "install & configure on your NAS", rates.nassetup]);
+
+    var onceTotal = lines.once.reduce(function(s, l){ return s + l[2]; }, 0);
+
+    var maint = onceTotal * rates.maint / 100;
+    if (maint > 0)
+      lines.yearly.push(["Maintenance & support", rates.maint + "% of one-time cost / yr", maint]);
+    if (state.mode === "online")
+      lines.yearly.push(["Online hosting", "server & bandwidth / yr", rates.hosting]);
+    if (state.db === "central")
+      lines.yearly.push(["Central DB hosting", "backups included / yr", rates.dbyr]);
+    if (state.store === "cloud")
+      lines.yearly.push(["Cloud storage & sync", "updates pushed from cloud / yr", rates.cloudyr]);
+    if (state.store === "nas")
+      lines.yearly.push(["NAS care", "updates via your NAS / yr", rates.nasyr]);
+    if (rates.puseryr > 0)
+      lines.yearly.push([state.users + " user licence" + (state.users === 1 ? "" : "s"),
+        money(rates.puseryr) + " per user / yr", state.users * rates.puseryr]);
+
+    var yearTotal = lines.yearly.reduce(function(s, l){ return s + l[2]; }, 0);
+    var recurring = yearTotal * state.years;
+    var discPct = state.years >= 5 ? rates.disc5 : state.years >= 3 ? rates.disc3 : 0;
+    var discount = recurring * discPct / 100;
+    var grand = onceTotal + recurring - discount;
+
+    return { lines: lines, onceTotal: onceTotal, yearTotal: yearTotal,
+             recurring: recurring, discPct: discPct, discount: discount, grand: grand };
+  }
+
+  // ---- rendering ------------------------------------------------------
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+  function render(){
+    var q = compute();
+    var h = "";
+
+    h += '<tr class="section"><td colspan="2">One-time</td></tr>';
+    q.lines.once.forEach(function(l){
+      h += '<tr><td class="desc">' + esc(l[0]) + '<small>' + esc(l[1]) + '</small></td>' +
+           '<td class="amt">' + money(l[2]) + '</td></tr>';
+    });
+    h += '<tr class="subtotal"><td>One-time subtotal</td><td class="amt">' + money(q.onceTotal) + '</td></tr>';
+
+    h += '<tr class="section"><td colspan="2">Recurring · each year</td></tr>';
+    if (q.lines.yearly.length === 0)
+      h += '<tr><td class="desc">No recurring charges</td><td class="amt">' + money(0) + '</td></tr>';
+    q.lines.yearly.forEach(function(l){
+      h += '<tr><td class="desc">' + esc(l[0]) + '<small>' + esc(l[1]) + '</small></td>' +
+           '<td class="amt">' + money(l[2]) + '</td></tr>';
+    });
+    h += '<tr class="subtotal"><td>Per year</td><td class="amt">' + money(q.yearTotal) + '</td></tr>';
+    h += '<tr><td class="desc">× ' + state.years + ' year' + (state.years === 1 ? "" : "s") +
+         '</td><td class="amt">' + money(q.recurring) + '</td></tr>';
+    if (q.discount > 0)
+      h += '<tr class="discount"><td>Multi-year discount (' + q.discPct + '% off recurring)</td>' +
+           '<td class="amt">−' + money(q.discount) + '</td></tr>';
+
+    document.getElementById("quoteTable").innerHTML = h;
+    document.getElementById("totYears").textContent =
+      state.years + " year" + (state.years === 1 ? "" : "s") + ", " + state.users + " user" + (state.users === 1 ? "" : "s");
+    document.getElementById("grandTotal").textContent = money(q.grand);
+    document.getElementById("perUser").textContent =
+      "≈ " + money(q.grand / state.users / state.years) + " per user per year";
+    document.getElementById("userHint").textContent =
+      state.users <= rates.incl
+        ? "Included in the base fee (up to " + rates.incl + ")"
+        : (state.users - rates.incl) + " above the " + rates.incl + " included in the base fee";
+    document.getElementById("yearHint").textContent =
+      state.years >= 5 ? rates.disc5 + "% multi-year discount on recurring costs"
+      : state.years >= 3 ? rates.disc3 + "% multi-year discount on recurring costs"
+      : "Commit 3+ years for a discount on recurring costs";
+  }
+
+  function quoteText(){
+    var q = compute();
+    var L = [];
+    L.push("WORK QUOTATION");
+    L.push(new Date().toLocaleDateString());
+    L.push("");
+    L.push("Users: " + state.users);
+    L.push("System: " + (state.mode === "online" ? "Online" : "Offline"));
+    L.push("Database: " + (state.db === "none" ? "None" : state.db === "local" ? "Local (on device)" : "Central (server)"));
+    L.push("Updates & data on: " + (state.store === "phone" ? "Phone" : state.store === "cloud" ? "Cloud" : "NAS"));
+    L.push("Years of use: " + state.years);
+    L.push("");
+    L.push("ONE-TIME");
+    q.lines.once.forEach(function(l){ L.push("  " + l[0] + " — " + money(l[2])); });
+    L.push("  Subtotal: " + money(q.onceTotal));
+    L.push("");
+    L.push("RECURRING (per year)");
+    q.lines.yearly.forEach(function(l){ L.push("  " + l[0] + " — " + money(l[2])); });
+    L.push("  Per year: " + money(q.yearTotal) + "  ×  " + state.years + " yr = " + money(q.recurring));
+    if (q.discount > 0) L.push("  Multi-year discount " + q.discPct + "%: −" + money(q.discount));
+    L.push("");
+    L.push("GRAND TOTAL: " + money(q.grand));
+    return L.join("\n");
+  }
+
+  // ---- wiring ---------------------------------------------------------
+  function wireSeg(id, key){
+    var seg = document.getElementById(id);
+    Array.prototype.forEach.call(seg.querySelectorAll("button"), function(b){
+      b.addEventListener("click", function(){
+        state[key] = b.getAttribute("data-v");
+        Array.prototype.forEach.call(seg.querySelectorAll("button"), function(x){
+          x.classList.toggle("on", x === b);
+        });
+        render();
+      });
+    });
+  }
+  wireSeg("segMode", "mode");
+  wireSeg("segDb", "db");
+  wireSeg("segStore", "store");
+
+  function wireStepper(inputId, minusId, plusId, key, min, max){
+    var inp = document.getElementById(inputId);
+    function set(v){
+      v = Math.round(v);
+      if (!isFinite(v)) v = min;
+      v = Math.min(max, Math.max(min, v));
+      state[key] = v; inp.value = v; render();
+    }
+    document.getElementById(minusId).addEventListener("click", function(){ set(state[key] - 1); });
+    document.getElementById(plusId).addEventListener("click", function(){ set(state[key] + 1); });
+    inp.addEventListener("input", function(){ var v = parseInt(inp.value, 10); if (isFinite(v)) { state[key] = Math.min(max, Math.max(min, v)); render(); } });
+    inp.addEventListener("blur", function(){ set(parseInt(inp.value, 10)); });
+  }
+  wireStepper("users", "userMinus", "userPlus", "users", 1, 9999);
+  wireStepper("years", "yearMinus", "yearPlus", "years", 1, 20);
+
+  // rates editor
+  RATE_KEYS.forEach(function(k){
+    var el = document.getElementById("r_" + k);
+    if (!el) return;
+    el.value = rates[k];
+    el.addEventListener("input", function(){
+      if (k === "cur") { rates.cur = el.value || "$"; }
+      else {
+        var v = parseFloat(el.value);
+        if (isFinite(v) && v >= 0) rates[k] = v; else return;
+      }
+      saveRates(); render();
+    });
+  });
+  document.getElementById("btnReset").addEventListener("click", function(){
+    RATE_KEYS.forEach(function(k){
+      rates[k] = DEFAULT_RATES[k];
+      var el = document.getElementById("r_" + k);
+      if (el) el.value = rates[k];
+    });
+    saveRates(); render(); toast("Rates reset");
+  });
+
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ t.classList.remove("show"); }, 1800);
+  }
+
+  document.getElementById("btnCopy").addEventListener("click", function(){
+    var txt = quoteText();
+    function fallback(){
+      var ta = document.createElement("textarea");
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); toast("Quotation copied"); }
+      catch(e){ toast("Copy not available"); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(txt).then(function(){ toast("Quotation copied"); }, fallback);
+    else fallback();
+  });
+
+  document.getElementById("btnShare").addEventListener("click", function(){
+    var txt = quoteText();
+    if (navigator.share) navigator.share({ title: "Work Quotation", text: txt }).catch(function(){});
+    else location.href = "share:" + encodeURIComponent(txt); // intercepted by the Android shell
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
