@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZENITH Estates — Above the Ordinary</title>
+  <meta name="description" content="ZENITH Estates is a boutique property agency for skyline residences and private estates. Scroll to descend from orbit to your next address.">
+  <meta property="og:title" content="ZENITH Estates — Above the Ordinary">
+  <meta property="og:description" content="A boutique property agency for homes that rise above the rest.">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23060a14'/%3E%3Cpath d='M9 21 16 9l7 12' stroke='%23e8d5a3' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    :root{
+      --ink:#eef2f7;
+      --ink-dim:rgba(238,242,247,.62);
+      --ink-faint:rgba(238,242,247,.38);
+      --gold:#e8d5a3;
+      --gold-dim:rgba(232,213,163,.55);
+      --bg:#04070f;
+      --hair:rgba(238,242,247,.14);
+      --sans:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      --serif:'Cormorant Garamond',Georgia,serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:auto}
+    body{
+      background:var(--bg);
+      color:var(--ink);
+      font-family:var(--sans);
+      font-weight:300;
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+    }
+    ::selection{background:rgba(232,213,163,.25)}
+
+    /* ============ LOADING VEIL ============ */
+    #veil{
+      position:fixed;inset:0;z-index:100;background:var(--bg);
+      display:flex;align-items:center;justify-content:center;
+      transition:opacity 1.1s ease .3s,visibility 1.1s ease .3s;
+    }
+    #veil.gone{opacity:0;visibility:hidden}
+    #veil .veil-mark{
+      font-family:var(--sans);font-weight:200;letter-spacing:.55em;font-size:14px;
+      color:var(--gold);text-indent:.55em;
+      animation:veilPulse 2s ease infinite;
+    }
+    @keyframes veilPulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+    /* ============ NAV ============ */
+    .nav{
+      position:fixed;top:0;left:0;right:0;z-index:50;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:26px 44px;
+      transition:opacity .6s ease;
+    }
+    .nav::before{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(to bottom,rgba(3,5,10,.55),transparent);
+    }
+    .brand{
+      position:relative;display:flex;align-items:baseline;gap:12px;
+      text-decoration:none;color:var(--ink);cursor:pointer;background:none;border:0;font-family:var(--sans);
+    }
+    .brand .dot{width:5px;height:5px;border-radius:50%;background:var(--gold);align-self:center}
+    .brand .name{font-weight:400;letter-spacing:.42em;font-size:13px}
+    .brand .sub{font-weight:200;letter-spacing:.3em;font-size:9px;color:var(--ink-faint);text-transform:uppercase}
+    .nav-links{position:relative;display:flex;align-items:center;gap:34px}
+    .nav-links a{
+      color:var(--ink-dim);text-decoration:none;font-size:10.5px;font-weight:300;
+      letter-spacing:.26em;text-transform:uppercase;
+      transition:color .3s ease;background:none;border:0;font-family:var(--sans);cursor:pointer;
+    }
+    .nav-links a:hover{color:var(--ink)}
+    .nav-cta{
+      position:relative;white-space:nowrap;
+      color:var(--ink) !important;
+      border:1px solid var(--hair) !important;
+      border-radius:999px;padding:10px 22px !important;
+      transition:border-color .3s ease,background .3s ease !important;
+    }
+    .nav-cta:hover{border-color:var(--gold-dim) !important;background:rgba(232,213,163,.06)}
+    @media (max-width:860px){
+      .nav{padding:20px 22px}
+      .nav-links a:not(.nav-cta){display:none}
+    }
+
+    /* ============ STAGE ============ */
+    #stage{
+      position:fixed;inset:0;z-index:1;overflow:hidden;
+      background:var(--bg);
+    }
+    .scene{
+      position:absolute;inset:0;
+      opacity:0;visibility:hidden;
+      will-change:opacity;
+    }
+    .scene.on{visibility:visible}
+    .scene-bg{
+      position:absolute;inset:-6%;
+      will-change:transform;
+    }
+    .scene-fg{
+      position:absolute;inset:0;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:0 24px;
+      will-change:transform,opacity;
+    }
+    .kicker{
+      font-size:10px;letter-spacing:.5em;text-transform:uppercase;
+      color:var(--gold-dim);margin-bottom:26px;text-indent:.5em;
+    }
+    .headline{
+      font-family:var(--sans);font-weight:200;
+      font-size:clamp(38px,6.2vw,84px);
+      letter-spacing:.01em;line-height:1.08;
+      text-shadow:0 2px 40px rgba(0,0,0,.45);
+      max-width:16ch;
+    }
+    .headline em{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:0}
+    .sub{
+      margin-top:24px;font-size:clamp(12px,1.3vw,15px);font-weight:300;
+      letter-spacing:.12em;color:var(--ink-dim);max-width:52ch;line-height:1.8;
+    }
+
+    /* ============ HUD ============ */
+    .hud{
+      position:fixed;z-index:40;pointer-events:none;
+      transition:opacity .6s ease;
+    }
+    #hud-alt{
+      right:44px;bottom:40px;text-align:right;
+      font-size:10px;letter-spacing:.3em;color:var(--ink-faint);
+    }
+    #hud-alt .alt-num{
+      display:block;font-size:20px;font-weight:200;letter-spacing:.14em;
+      color:var(--ink-dim);margin-top:6px;font-variant-numeric:tabular-nums;
+    }
+    #hud-scroll{
+      left:0;right:0;bottom:40px;text-align:center;
+      font-size:9.5px;letter-spacing:.5em;text-transform:uppercase;color:var(--ink-faint);text-indent:.5em;
+    }
+    #hud-scroll .chev{
+      display:block;width:1px;height:34px;margin:14px auto 0;
+      background:linear-gradient(to bottom,var(--ink-faint),transparent);
+      animation:chevDrop 2.2s ease infinite;
+    }
+    @keyframes chevDrop{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+    #hud-line{
+      left:44px;top:50%;transform:translateY(-50%);
+      display:flex;flex-direction:column;gap:14px;align-items:center;
+    }
+    #hud-line .tick{
+      width:4px;height:4px;border-radius:50%;
+      background:var(--ink-faint);opacity:.5;
+      transition:all .45s ease;
+    }
+    #hud-line .tick.lit{background:var(--gold);opacity:1;box-shadow:0 0 10px rgba(232,213,163,.7)}
+    @media (max-width:860px){
+      #hud-alt{right:22px;bottom:28px}
+      #hud-line{left:18px}
+      #hud-scroll{bottom:28px}
+    }
+
+    /* ============ SCROLL SPACE ============ */
+    #space{position:relative;z-index:0;pointer-events:none}
+
+    /* =====================================================
+       SCENE 1 — ORBIT
+    ===================================================== */
+    #s1 .scene-bg{background:radial-gradient(ellipse at 50% -20%,#0b1226 0%,#04070f 55%,#02040a 100%)}
+    #stars{position:absolute;inset:0;width:100%;height:100%}
+    .earth{
+      position:absolute;left:50%;top:60%;transform:translateX(-50%);
+      width:230vmax;height:230vmax;border-radius:50%;
+      background:
+        radial-gradient(circle at 50% 18%, #2a4a7f 0%, #16294d 14%, #0a1430 30%, #050a1c 52%, #030614 70%);
+      box-shadow:
+        0 0 70px 16px rgba(110,165,245,.45),
+        0 0 200px 60px rgba(70,120,210,.22),
+        inset 0 100px 180px -40px rgba(120,180,255,.55),
+        inset 0 34px 60px -10px rgba(200,230,255,.65);
+    }
+    .earth::before{
+      content:'';position:absolute;inset:0;border-radius:50%;
+      background:
+        radial-gradient(ellipse 3% 1.1% at 38% 5%, rgba(255,214,140,.55), transparent 70%),
+        radial-gradient(ellipse 3.6% 1.4% at 61% 8%, rgba(255,200,120,.4), transparent 70%),
+        radial-gradient(ellipse 2.2% .9% at 48% 3.4%, rgba(255,230,170,.5), transparent 70%),
+        radial-gradient(ellipse 4.4% 1.8% at 27% 9%, rgba(255,190,110,.28), transparent 70%),
+        radial-gradient(ellipse 1.6% .7% at 55% 5.4%, rgba(255,220,150,.45), transparent 70%),
+        radial-gradient(ellipse 2.6% 1% at 70% 12%, rgba(255,205,130,.3), transparent 70%);
+      filter:blur(1px);
+    }
+    .earth::after{ /* atmosphere rim */
+      content:'';position:absolute;inset:-14px;border-radius:50%;
+      background:radial-gradient(circle at 50% 20%, transparent 62%, rgba(120,190,255,.35) 69.5%, rgba(70,130,240,.12) 71.5%, transparent 74%);
+    }
+
+    /* =====================================================
+       SCENE 2 — CLOUDS
+    ===================================================== */
+    #s2 .scene-bg{
+      background:linear-gradient(to bottom,
+        #060b1c 0%, #0d1733 22%, #27306a 40%,
+        #713e63 58%, #c96f4e 74%, #f0a35c 88%, #ffd9a0 100%);
+    }
+    #s2 .sunglow{
+      position:absolute;left:50%;bottom:4%;transform:translateX(-50%);
+      width:70vmax;height:34vmax;border-radius:50%;
+      background:radial-gradient(ellipse at center,rgba(255,220,160,.75),rgba(255,170,100,.25) 45%,transparent 70%);
+      filter:blur(10px);
+    }
+    .cloudband{
+      position:absolute;left:-20%;right:-20%;height:26vh;
+      filter:blur(14px);opacity:.85;
+    }
+    .cloudband i{
+      position:absolute;border-radius:50%;
+    }
+    .cb1{bottom:26%}
+    .cb2{bottom:12%;filter:blur(9px)}
+    .cb3{bottom:-4%;filter:blur(6px);opacity:.95}
+
+    /* =====================================================
+       SCENE 3 — SKYLINE
+    ===================================================== */
+    #s3 .scene-bg{
+      background:linear-gradient(to bottom,
+        #131c3d 0%, #2a2f63 30%, #6d4670 52%, #c76b4c 70%, #f2a558 84%, #ffce8f 100%);
+    }
+    #s3 .sun{
+      position:absolute;left:79%;bottom:20%;
+      width:11vmax;height:11vmax;border-radius:50%;
+      background:radial-gradient(circle,#fff3d6 20%,#ffce85 55%,rgba(255,180,100,0) 75%);
+      filter:blur(3px);
+    }
+    #s3 svg{position:absolute;left:0;right:0;bottom:0;width:100%;height:64%;display:block}
+    #s3 .haze{
+      position:absolute;left:0;right:0;bottom:0;height:40%;
+      background:linear-gradient(to top,rgba(255,180,110,.28),transparent);
+    }
+    #s3 .stats{
+      display:flex;gap:clamp(28px,6vw,90px);margin-top:46px;flex-wrap:wrap;justify-content:center;
+    }
+    #s3 .stat b{
+      display:block;font-family:var(--sans);font-weight:200;font-size:clamp(26px,3.4vw,44px);
+      letter-spacing:.05em;color:var(--ink);
+    }
+    #s3 .stat b i{font-style:normal;color:var(--gold)}
+    #s3 .stat span{
+      display:block;margin-top:8px;font-size:9.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink-dim);
+    }
+
+    /* =====================================================
+       SCENE 4 — THE TOWER / LISTINGS
+    ===================================================== */
+    #s4 .scene-bg{
+      background:linear-gradient(to bottom,#0c1330 0%,#26305e 34%,#8c5468 58%,#e08b52 82%,#ffc784 100%);
+    }
+    #s4 svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+    #s4 .scene-fg{justify-content:center}
+    .cards{
+      display:flex;gap:18px;margin-top:44px;flex-wrap:wrap;justify-content:center;
+    }
+    .card{
+      width:min(290px,86vw);text-align:left;
+      border:1px solid var(--hair);border-radius:14px;
+      background:rgba(5,8,18,.5);
+      -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+      padding:24px 26px;
+      transition:border-color .35s ease,transform .35s ease,background .35s ease;
+      pointer-events:auto;
+    }
+    .card:hover{border-color:var(--gold-dim);transform:translateY(-4px);background:rgba(8,12,26,.62)}
+    .card .tag{font-size:9px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold-dim)}
+    .card h3{font-family:var(--serif);font-weight:500;font-size:24px;letter-spacing:.02em;margin:12px 0 6px;color:var(--ink)}
+    .card .meta{font-size:11px;letter-spacing:.14em;color:var(--ink-dim);line-height:1.9}
+    .card .price{
+      margin-top:16px;padding-top:14px;border-top:1px solid var(--hair);
+      display:flex;justify-content:space-between;align-items:baseline;
+    }
+    .card .price b{font-weight:300;font-size:17px;letter-spacing:.06em;color:var(--gold)}
+    .card .price span{font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-faint)}
+
+    /* =====================================================
+       SCENE 5 — INTERIOR / SERVICES
+    ===================================================== */
+    #s5 .scene-bg{background:linear-gradient(to bottom,#0a0f22 0%,#141b38 40%,#1b2140 100%)}
+    #s5 svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+    #s5 .glow{
+      position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);
+      width:80vmax;height:44vmax;border-radius:50%;
+      background:radial-gradient(ellipse,rgba(120,150,235,.16),transparent 65%);
+    }
+    .services{
+      display:flex;gap:clamp(20px,4vw,56px);margin-top:48px;flex-wrap:wrap;justify-content:center;
+    }
+    .service{
+      width:min(250px,80vw);text-align:center;
+    }
+    .service .n{
+      font-family:var(--serif);font-style:italic;font-size:15px;color:var(--gold-dim);
+    }
+    .service h3{
+      font-weight:300;font-size:14px;letter-spacing:.3em;text-transform:uppercase;
+      margin:12px 0 12px;color:var(--ink);
+    }
+    .service p{font-size:12px;letter-spacing:.08em;line-height:1.85;color:var(--ink-dim)}
+
+    /* =====================================================
+       SCENE 6 — HOME / CONTACT
+    ===================================================== */
+    #s6 .scene-bg{
+      background:linear-gradient(to bottom,#101736 0%,#2c2c5c 34%,#79466a 56%,#d47b52 78%,#2a1a2e 96%);
+    }
+    #s6 .pool{
+      position:absolute;left:0;right:0;bottom:0;height:34%;
+      background:linear-gradient(to bottom,#d47b52 0%,#5d3556 8%,#1d1e46 40%,#0c1029 100%);
+    }
+    #s6 .pool::before{
+      content:'';position:absolute;inset:0;
+      background:
+        repeating-linear-gradient(178deg,transparent 0 7px,rgba(255,200,150,.08) 7px 8px),
+        radial-gradient(ellipse 60% 30% at 50% 0%,rgba(255,190,130,.35),transparent 70%);
+    }
+    #s6 .citylights{position:absolute;left:0;right:0;bottom:33.4%;height:10%;}
+    #s6 .deck{
+      position:absolute;left:0;right:0;bottom:0;height:7%;
+      background:linear-gradient(to bottom,#171325,#0a0817);
+    }
+    #s6 .scene-fg{justify-content:center}
+    .cta-btn{
+      pointer-events:auto;margin-top:40px;
+      display:inline-flex;align-items:center;gap:14px;
+      font-family:var(--sans);font-size:11px;font-weight:300;letter-spacing:.32em;text-transform:uppercase;
+      color:var(--ink);text-decoration:none;
+      border:1px solid var(--gold-dim);border-radius:999px;
+      padding:18px 38px;background:rgba(5,8,18,.35);
+      -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+      transition:background .35s ease,border-color .35s ease,letter-spacing .35s ease;
+      cursor:pointer;
+    }
+    .cta-btn:hover{background:rgba(232,213,163,.12);border-color:var(--gold);letter-spacing:.38em}
+    .cta-btn .arr{color:var(--gold);font-size:14px;letter-spacing:0}
+    .contact-row{
+      margin-top:44px;display:flex;gap:clamp(24px,5vw,70px);flex-wrap:wrap;justify-content:center;
+      pointer-events:auto;
+    }
+    .contact-row a{
+      color:var(--ink-dim);text-decoration:none;font-size:11px;letter-spacing:.22em;
+      transition:color .3s ease;
+    }
+    .contact-row a:hover{color:var(--gold)}
+    .foot{
+      position:absolute;bottom:26px;left:0;right:0;text-align:center;
+      font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-faint);
+    }
+
+    /* ============ SMALL SCREENS ============ */
+    @media (max-width:860px){
+      .cards{
+        flex-wrap:nowrap;justify-content:flex-start;
+        width:100vw;max-width:100vw;overflow-x:auto;
+        padding:6px 28px 14px;margin-top:30px;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;pointer-events:auto;
+      }
+      .cards::-webkit-scrollbar{display:none}
+      .card{flex:0 0 236px;width:236px;padding:18px 20px}
+      .card h3{font-size:20px}
+      .services{gap:20px;margin-top:28px}
+      .service p{font-size:11px;line-height:1.7}
+      .stats{margin-top:32px}
+      .foot{bottom:72px;padding:0 20px}
+      .contact-row{margin-top:32px}
+      .cta-btn{padding:15px 28px}
+    }
+
+    /* ============ REDUCED MOTION ============ */
+    @media (prefers-reduced-motion:reduce){
+      #hud-scroll .chev,#veil .veil-mark{animation:none}
+      .cloudband,.scene-bg{transition:none}
+    }
+  </style>
+</head>
+<body>
+
+  <div id="veil"><span class="veil-mark">ZENITH</span></div>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" id="nav">
+    <button class="brand" data-go="0" aria-label="Zenith Estates — back to top">
+      <span class="dot"></span>
+      <span class="name">ZENITH</span>
+      <span class="sub">Estates</span>
+    </button>
+    <nav class="nav-links" aria-label="Main">
+      <a data-go="2">The Agency</a>
+      <a data-go="3">Portfolio</a>
+      <a data-go="4">Services</a>
+      <a data-go="5">Enquire</a>
+      <a data-go="5" class="nav-cta">Private Viewing</a>
+    </nav>
+  </header>
+
+  <!-- ============ STAGE ============ -->
+  <div id="stage" aria-hidden="false">
+
+    <!-- SCENE 1 · ORBIT -->
+    <section class="scene" id="s1">
+      <div class="scene-bg">
+        <canvas id="stars"></canvas>
+        <div class="earth"></div>
+      </div>
+      <div class="scene-fg">
+        <p class="kicker">Zenith Estates · Boutique Property Agency</p>
+        <h1 class="headline">Above the <em>ordinary</em></h1>
+        <p class="sub">A hand-picked portfolio of skyline residences and private estates,
+        represented by an agency that never settles for street level.</p>
+      </div>
+    </section>
+
+    <!-- SCENE 2 · CLOUDS -->
+    <section class="scene" id="s2">
+      <div class="scene-bg">
+        <div class="sunglow"></div>
+        <div class="cloudband cb1"></div>
+        <div class="cloudband cb2"></div>
+        <div class="cloudband cb3"></div>
+      </div>
+      <div class="scene-fg">
+        <p class="kicker">The Agency</p>
+        <h2 class="headline">Every home has a <em>horizon</em></h2>
+        <p class="sub">We represent a limited collection of exceptional properties — and the people
+        who deserve them. Discreet, precise, and personally invested in every key we hand over.</p>
+      </div>
+    </section>
+
+    <!-- SCENE 3 · SKYLINE -->
+    <section class="scene" id="s3">
+      <div class="scene-bg">
+        <div class="sun"></div>
+        <svg id="skyline" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
+        <div class="haze"></div>
+      </div>
+      <div class="scene-fg">
+        <p class="kicker">Local Knowledge</p>
+        <h2 class="headline">We know the skyline <em>by heart</em></h2>
+        <div class="stats">
+          <div class="stat"><b>15<i>+</i></b><span>Years in market</span></div>
+          <div class="stat"><b><i>$</i>1.2B</b><span>Property sold</span></div>
+          <div class="stat"><b>480<i>+</i></b><span>Keys handed over</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCENE 4 · THE TOWER / LISTINGS -->
+    <section class="scene" id="s4">
+      <div class="scene-bg">
+        <svg id="towers" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
+      </div>
+      <div class="scene-fg">
+        <p class="kicker">Signature Listings</p>
+        <h2 class="headline" style="font-size:clamp(30px,4.6vw,60px)">Residences held in <em>glass</em></h2>
+        <div class="cards">
+          <div class="card">
+            <span class="tag">Penthouse · CBD</span>
+            <h3>The Meridian</h3>
+            <p class="meta">4 Bed · 5 Bath · 412 sqm<br>Full-floor · Private lift lobby</p>
+            <div class="price"><b>$12.8M</b><span>Private sale</span></div>
+          </div>
+          <div class="card">
+            <span class="tag">Sky Residence · Waterfront</span>
+            <h3>Cloudline 88</h3>
+            <p class="meta">3 Bed · 4 Bath · 289 sqm<br>Double-height glass · Harbour view</p>
+            <div class="price"><b>$7.4M</b><span>By appointment</span></div>
+          </div>
+          <div class="card">
+            <span class="tag">Villa · Hillcrest</span>
+            <h3>Harbour Sky Villa</h3>
+            <p class="meta">5 Bed · 6 Bath · 640 sqm<br>Infinity edge · Panoramic terrace</p>
+            <div class="price"><b>$9.9M</b><span>Expression of interest</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCENE 5 · INTERIOR / SERVICES -->
+    <section class="scene" id="s5">
+      <div class="scene-bg">
+        <div class="glow"></div>
+        <svg id="interior" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+      </div>
+      <div class="scene-fg">
+        <p class="kicker">What We Do</p>
+        <h2 class="headline" style="font-size:clamp(30px,4.6vw,60px)">Step inside the <em>sky</em></h2>
+        <div class="services">
+          <div class="service">
+            <span class="n">i.</span>
+            <h3>Acquisition</h3>
+            <p>Off-market access and quiet negotiation for buyers who value discretion as much as the view.</p>
+          </div>
+          <div class="service">
+            <span class="n">ii.</span>
+            <h3>Sale</h3>
+            <p>Cinematic marketing and a vetted register of qualified buyers — your home, presented at altitude.</p>
+          </div>
+          <div class="service">
+            <span class="n">iii.</span>
+            <h3>Management</h3>
+            <p>Full-service care for residences and portfolios, from tenancy to turnaround, handled invisibly.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCENE 6 · HOME / CONTACT -->
+    <section class="scene" id="s6">
+      <div class="scene-bg">
+        <div class="citylights"><canvas id="bokeh"></canvas></div>
+        <div class="pool"></div>
+        <div class="deck"></div>
+      </div>
+      <div class="scene-fg">
+        <p class="kicker">Arrival</p>
+        <h2 class="headline">Where the sky comes <em>home</em></h2>
+        <p class="sub">Tell us where you want to wake up. We'll take care of the descent.</p>
+        <a class="cta-btn" href="mailto:hello@zenithestates.com?subject=Private%20Viewing">
+          Arrange a private viewing <span class="arr">→</span>
+        </a>
+        <div class="contact-row">
+          <a href="mailto:hello@zenithestates.com">hello@zenithestates.com</a>
+          <a href="tel:+10000000000">+1 (000) 000 0000</a>
+          <a href="#" onclick="return false">@zenith.estates</a>
+        </div>
+        <p class="foot">© 2026 Zenith Estates · All altitudes reserved</p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ============ HUD ============ -->
+  <div class="hud" id="hud-line" aria-hidden="true">
+    <span class="tick"></span><span class="tick"></span><span class="tick"></span>
+    <span class="tick"></span><span class="tick"></span><span class="tick"></span>
+  </div>
+  <div class="hud" id="hud-alt" aria-hidden="true">
+    ALTITUDE<span class="alt-num" id="altnum">408 KM</span>
+  </div>
+  <div class="hud" id="hud-scroll" aria-hidden="true">
+    Scroll to descend
+    <span class="chev"></span>
+  </div>
+
+  <!-- ============ SCROLL SPACE ============ -->
+  <div id="space"></div>
+
+  <script>
+  (function(){
+    'use strict';
+
+    var N = 6;                       // scenes
+    var SEG_VH = 130;                // scroll distance per scene transition, in vh
+    var scenes = [];
+    for (var i = 1; i <= N; i++) scenes.push(document.getElementById('s' + i));
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------- scroll space ---------- */
+    var space = document.getElementById('space');
+    function sizeSpace(){
+      space.style.height = ((N - 1) * SEG_VH + 100) + 'vh';
+    }
+    sizeSpace();
+
+    /* ---------- procedural cloud bands (scene 2) ---------- */
+    document.querySelectorAll('.cloudband').forEach(function(band, bi){
+      var count = 10;
+      for (var c = 0; c < count; c++){
+        var b = document.createElement('i');
+        var w = 18 + Math.random() * 26;
+        var h = 7 + Math.random() * 9;
+        var warm = bi === 2 ? .55 : bi === 1 ? .4 : .28;
+        b.style.width = w + 'vw';
+        b.style.height = h + 'vh';
+        b.style.left = (Math.random() * 110 - 5) + '%';
+        b.style.top = (Math.random() * 70) + '%';
+        b.style.background = 'radial-gradient(ellipse at 50% 40%, rgba(255,' +
+          Math.round(200 + Math.random() * 40) + ',' + Math.round(150 + Math.random() * 60) + ',' +
+          (warm + Math.random() * .2).toFixed(2) + '), rgba(60,60,120,.06) 70%, transparent 75%)';
+        band.appendChild(b);
+      }
+    });
+
+    /* ---------- skyline SVG (scene 3) ---------- */
+    (function(){
+      var svg = document.getElementById('skyline');
+      var W = 1600, H = 640;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      var ns = 'http://www.w3.org/2000/svg';
+      function layer(color, yBase, minW, maxW, minH, maxH, winAlpha){
+        var g = document.createElementNS(ns, 'g');
+        var x = -40;
+        while (x < W + 40){
+          var bw = minW + Math.random() * (maxW - minW);
+          var bh = minH + Math.random() * (maxH - minH);
+          var r = document.createElementNS(ns, 'rect');
+          r.setAttribute('x', x); r.setAttribute('y', yBase - bh);
+          r.setAttribute('width', bw); r.setAttribute('height', bh + 40);
+          r.setAttribute('fill', color);
+          g.appendChild(r);
+          if (winAlpha > 0){
+            for (var wy = yBase - bh + 14; wy < yBase - 12; wy += 17){
+              for (var wx = x + 7; wx < x + bw - 8; wx += 15){
+                if (Math.random() < .34){
+                  var wr = document.createElementNS(ns, 'rect');
+                  wr.setAttribute('x', wx); wr.setAttribute('y', wy);
+                  wr.setAttribute('width', 4.5); wr.setAttribute('height', 6.5);
+                  wr.setAttribute('fill', 'rgba(255,214,150,' + (winAlpha * (0.5 + Math.random() * .5)).toFixed(2) + ')');
+                  g.appendChild(wr);
+                }
+              }
+            }
+          }
+          x += bw + 4 + Math.random() * 26;
+        }
+        svg.appendChild(g);
+      }
+      layer('#3a3560', H, 50, 120, 160, 380, 0);          // far
+      layer('#262143', H, 60, 130, 120, 300, .35);        // mid
+      layer('#12102a', H, 70, 150, 70, 220, .8);          // near
+    })();
+
+    /* ---------- tower facade SVG (scene 4) ---------- */
+    (function(){
+      var svg = document.getElementById('towers');
+      var W = 1600, H = 900;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      svg.setAttribute('preserveAspectRatio', 'xMidYMax slice');
+      var ns = 'http://www.w3.org/2000/svg';
+      var defs = document.createElementNS(ns, 'defs');
+      defs.innerHTML =
+        '<linearGradient id="glassL" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" stop-color="#1c2350"/><stop offset=".55" stop-color="#5c3f66"/>' +
+          '<stop offset=".8" stop-color="#e08b52"/><stop offset="1" stop-color="#ffcf8e"/>' +
+        '</linearGradient>' +
+        '<linearGradient id="glassR" x1="1" y1="0" x2="0" y2="1">' +
+          '<stop offset="0" stop-color="#141a3d"/><stop offset=".6" stop-color="#3d3060"/>' +
+          '<stop offset="1" stop-color="#c9764e"/>' +
+        '</linearGradient>';
+      svg.appendChild(defs);
+      function tower(cx, w, top, fill, mullionAlpha){
+        var g = document.createElementNS(ns, 'g');
+        var r = document.createElementNS(ns, 'rect');
+        r.setAttribute('x', cx - w/2); r.setAttribute('y', top);
+        r.setAttribute('width', w); r.setAttribute('height', H - top);
+        r.setAttribute('fill', fill);
+        g.appendChild(r);
+        for (var x = cx - w/2 + 14; x < cx + w/2; x += 26){
+          var l = document.createElementNS(ns, 'line');
+          l.setAttribute('x1', x); l.setAttribute('y1', top);
+          l.setAttribute('x2', x); l.setAttribute('y2', H);
+          l.setAttribute('stroke', 'rgba(6,8,20,' + mullionAlpha + ')');
+          l.setAttribute('stroke-width', '1.8');
+          g.appendChild(l);
+        }
+        for (var y = top + 22; y < H; y += 34){
+          var l2 = document.createElementNS(ns, 'line');
+          l2.setAttribute('x1', cx - w/2); l2.setAttribute('y1', y);
+          l2.setAttribute('x2', cx + w/2); l2.setAttribute('y2', y);
+          l2.setAttribute('stroke', 'rgba(6,8,20,' + (mullionAlpha * .8) + ')');
+          l2.setAttribute('stroke-width', '1.2');
+          g.appendChild(l2);
+        }
+        svg.appendChild(g);
+      }
+      tower(150, 280, 120, 'url(#glassR)', .34);
+      tower(1470, 320, 60, 'url(#glassR)', .34);
+      tower(820, 420, 200, 'url(#glassL)', .42);
+    })();
+
+    /* ---------- interior SVG (scene 5) ---------- */
+    (function(){
+      var svg = document.getElementById('interior');
+      var W = 1600, H = 900;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      var ns = 'http://www.w3.org/2000/svg';
+      var defs = document.createElementNS(ns, 'defs');
+      defs.innerHTML =
+        '<linearGradient id="winSky" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0" stop-color="#2a3a78"/><stop offset=".55" stop-color="#4a4a8c"/>' +
+          '<stop offset=".85" stop-color="#b06a58"/><stop offset="1" stop-color="#e79a5e"/>' +
+        '</linearGradient>' +
+        '<linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0" stop-color="#2b2138"/><stop offset="1" stop-color="#120d1c"/>' +
+        '</linearGradient>';
+      svg.appendChild(defs);
+      var html = '';
+      // window wall
+      html += '<rect x="0" y="0" width="' + W + '" height="620" fill="url(#winSky)"/>';
+      // distant skyline inside the glass
+      var bx = 0;
+      while (bx < W){
+        var bw2 = 40 + Math.random() * 90;
+        var bh2 = 30 + Math.random() * 120;
+        html += '<rect x="' + bx + '" y="' + (560 - bh2) + '" width="' + bw2 + '" height="' + (bh2 + 60) + '" fill="rgba(20,18,50,.85)"/>';
+        bx += bw2 + 6 + Math.random() * 30;
+      }
+      // floor
+      html += '<rect x="0" y="620" width="' + W + '" height="280" fill="url(#floor)"/>';
+      html += '<rect x="0" y="620" width="' + W + '" height="6" fill="rgba(232,213,163,.18)"/>';
+      // window reflection on floor
+      html += '<rect x="0" y="626" width="' + W + '" height="120" fill="rgba(90,90,170,.10)"/>';
+      // mullions
+      for (var mx = 0; mx <= W; mx += 266){
+        html += '<rect x="' + (mx - 4) + '" y="0" width="8" height="626" fill="#0a0a16"/>';
+      }
+      html += '<rect x="0" y="0" width="' + W + '" height="12" fill="#0a0a16"/>';
+      // furniture silhouettes
+      html += '<rect x="576" y="592" width="20" height="66" rx="8" fill="#0f0c1c"/>';            // sofa arm L
+      html += '<rect x="1004" y="592" width="20" height="66" rx="8" fill="#0f0c1c"/>';           // sofa arm R
+      html += '<rect x="586" y="586" width="428" height="28" rx="11" fill="#100d1e"/>';          // sofa back
+      html += '<rect x="586" y="614" width="428" height="44" rx="9" fill="#0d0b18"/>';           // sofa seat
+      html += '<rect x="612" y="658" width="14" height="20" fill="#0b0916"/><rect x="974" y="658" width="14" height="20" fill="#0b0916"/>';
+      html += '<ellipse cx="800" cy="682" rx="330" ry="12" fill="rgba(6,5,12,.55)"/>';           // rug shadow
+      html += '<ellipse cx="1240" cy="668" rx="80" ry="10" fill="#0d0b18"/><rect x="1236" y="600" width="8" height="64" fill="#0d0b18"/>';  // floor lamp
+      html += '<circle cx="1240" cy="592" r="15" fill="rgba(255,214,150,.9)"/>';
+      html += '<circle cx="1240" cy="592" r="36" fill="rgba(255,200,130,.16)"/>';
+      svg.innerHTML += html;
+    })();
+
+    /* ---------- starfield (scene 1) ---------- */
+    var starC = document.getElementById('stars');
+    var starCtx = starC.getContext('2d');
+    var starsArr = [];
+    function sizeStars(){
+      starC.width = starC.clientWidth * (window.devicePixelRatio || 1);
+      starC.height = starC.clientHeight * (window.devicePixelRatio || 1);
+      starsArr = [];
+      var n = Math.round(starC.width * starC.height / 3600);
+      for (var i = 0; i < n; i++){
+        starsArr.push({
+          x: Math.random() * starC.width,
+          y: Math.random() * starC.height,
+          r: Math.random() * 1.7 + .4,
+          p: Math.random() * Math.PI * 2,
+          s: .4 + Math.random() * 1.4
+        });
+      }
+    }
+    function drawStars(t){
+      starCtx.clearRect(0, 0, starC.width, starC.height);
+      for (var i = 0; i < starsArr.length; i++){
+        var st = starsArr[i];
+        var a = .45 + .5 * (0.5 + 0.5 * Math.sin(st.p + t * .001 * st.s));
+        starCtx.globalAlpha = a;
+        starCtx.fillStyle = i % 9 === 0 ? '#cfe0ff' : '#ffffff';
+        starCtx.beginPath();
+        starCtx.arc(st.x, st.y, st.r, 0, 6.2832);
+        starCtx.fill();
+      }
+      starCtx.globalAlpha = 1;
+    }
+
+    /* ---------- bokeh city lights (scene 6) ---------- */
+    var bokC = document.getElementById('bokeh');
+    var bokCtx = bokC.getContext('2d');
+    var boks = [];
+    function sizeBokeh(){
+      bokC.width = bokC.clientWidth * (window.devicePixelRatio || 1);
+      bokC.height = bokC.clientHeight * (window.devicePixelRatio || 1);
+      bokC.style.width = '100%'; bokC.style.height = '100%';
+      boks = [];
+      var n = Math.round(bokC.width / 9);
+      for (var i = 0; i < n; i++){
+        boks.push({
+          x: Math.random() * bokC.width,
+          y: bokC.height * (.25 + Math.random() * .75),
+          r: Math.random() * 2.4 + .8,
+          p: Math.random() * Math.PI * 2,
+          warm: Math.random() < .75
+        });
+      }
+    }
+    function drawBokeh(t){
+      bokCtx.clearRect(0, 0, bokC.width, bokC.height);
+      for (var i = 0; i < boks.length; i++){
+        var b = boks[i];
+        bokCtx.globalAlpha = .25 + .5 * (0.5 + 0.5 * Math.sin(b.p + t * .0012));
+        bokCtx.fillStyle = b.warm ? '#ffd9a0' : '#a8c4ff';
+        bokCtx.beginPath();
+        bokCtx.arc(b.x, b.y, b.r, 0, 6.2832);
+        bokCtx.fill();
+      }
+      bokCtx.globalAlpha = 1;
+    }
+
+    /* ---------- HUD ---------- */
+    var altEl = document.getElementById('altnum');
+    var ticks = document.querySelectorAll('#hud-line .tick');
+    var hudScroll = document.getElementById('hud-scroll');
+    var ALT = [408, 12, 0.8, 0.312, 0.04, 0];   // km per scene
+    function fmtAlt(km){
+      if (km >= 1) return Math.round(km) + ' KM';
+      if (km > 0.0005) return Math.round(km * 1000) + ' M';
+      return 'HOME';
+    }
+
+    /* ---------- scroll engine ---------- */
+    var vh = window.innerHeight;
+    var lastP = -1;
+    function clamp(v, a, b){ return v < a ? a : v > b ? b : v; }
+
+    function apply(now){
+      var segPx = vh * SEG_VH / 100;
+      var p = clamp(window.scrollY / segPx, 0, N - 1);
+
+      for (var i = 0; i < N; i++){
+        var sc = scenes[i];
+        var t = p - i;                                    // 0 when centered
+        var vis = Math.abs(t) < 0.72;
+        if (!vis){
+          if (sc.classList.contains('on')){ sc.classList.remove('on'); sc.style.opacity = 0; }
+          continue;
+        }
+        sc.classList.add('on');
+        var fade = clamp(1 - (Math.abs(t) - 0.28) / 0.36, 0, 1);   // full within ±0.28
+        sc.style.opacity = reduced ? (Math.abs(t) < 0.5 ? 1 : 0) : fade;
+        if (!reduced){
+          var bg = sc.children[0];
+          var fg = sc.children[1];
+          var scale = Math.max(1.03 + 0.34 * t, 0.95);             // fly-through zoom (inset -6% hides edges above ~0.9)
+          bg.style.transform = 'scale(' + scale.toFixed(4) + ')';
+          fg.style.transform = 'translateY(' + (-t * 16) + 'vh) scale(' + (1 + t * .08).toFixed(4) + ')';
+          var fgFade = clamp(1 - (Math.abs(t) - 0.18) / 0.26, 0, 1);
+          fg.style.opacity = fgFade;
+        }
+      }
+
+      // HUD
+      var i0 = Math.floor(p), i1 = Math.min(i0 + 1, N - 1);
+      var f = p - i0;
+      var km = ALT[i0] + (ALT[i1] - ALT[i0]) * (f < .5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2);
+      altEl.textContent = fmtAlt(km);
+      var near = Math.round(p);
+      for (var k = 0; k < ticks.length; k++) ticks[k].classList.toggle('lit', k === near);
+      hudScroll.style.opacity = p > 0.15 ? 0 : 1;
+      if (p >= N - 1.05) hudScroll.style.opacity = 0;
+
+      lastP = p;
+      // canvases only when their scene is visible
+      if (Math.abs(p - 0) < 0.75) drawStars(now);
+      if (Math.abs(p - (N - 1)) < 0.75) drawBokeh(now);
+    }
+
+    function loop(now){
+      apply(now);
+      requestAnimationFrame(loop);
+    }
+
+    /* ---------- nav ---------- */
+    document.querySelectorAll('[data-go]').forEach(function(el){
+      el.addEventListener('click', function(e){
+        e.preventDefault();
+        var idx = parseInt(el.getAttribute('data-go'), 10);
+        var segPx = window.innerHeight * SEG_VH / 100;
+        window.scrollTo({ top: idx * segPx, behavior: reduced ? 'auto' : 'smooth' });
+      });
+    });
+
+    /* ---------- resize ---------- */
+    function onResize(){
+      vh = window.innerHeight;
+      sizeSpace();
+      sizeStars();
+      sizeBokeh();
+    }
+    window.addEventListener('resize', onResize);
+
+    /* ---------- init ---------- */
+    sizeStars();
+    sizeBokeh();
+    requestAnimationFrame(loop);
+    window.addEventListener('load', function(){
+      document.getElementById('veil').classList.add('gone');
+    });
+    // fallback if load already fired or hangs
+    setTimeout(function(){ document.getElementById('veil').classList.add('gone'); }, 2500);
+  })();
+  </script>
+</body>
+</html>
