@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ID Capture NAS</string>
+
+    <string name="align_hint">Align the document inside the frame</string>
+    <string name="mode_ic">IC card</string>
+    <string name="mode_passport">Passport</string>
+    <string name="capture">Capture</string>
+    <string name="upload_photo">Upload photo</string>
+
+    <string name="camera_permission_denied">Camera permission is required to capture documents.</string>
+    <string name="camera_start_failed">Could not start camera: %1$s</string>
+    <string name="capture_failed">Capture failed: %1$s</string>
+    <string name="import_failed">Could not read the selected photo.</string>
+    <string name="save_failed">Could not save the image.</string>
+    <string name="saved_to">Saved %1$s</string>
+    <string name="saved_uploading">Saved %1$s — uploading to NAS</string>
+
+    <string name="nas_button">NAS settings</string>
+    <string name="nas_title">UGREEN NAS upload</string>
+    <string name="nas_switch">Upload captures to NAS</string>
+    <string name="nas_host_hint">NAS address (e.g. 192.168.1.10)</string>
+    <string name="nas_share_hint">Shared folder (e.g. Documents)</string>
+    <string name="nas_folder_hint">Subfolder (e.g. IDCapture)</string>
+    <string name="nas_user_hint">Username</string>
+    <string name="nas_password_hint">Password</string>
+    <string name="nas_help">Connects over SMB. On UGREEN UGOS, make sure SMB is enabled (Control Panel → File Services) and the account has write access to the shared folder. Leave username empty for guest access.</string>
+    <string name="nas_cancel">Cancel</string>
+    <string name="nas_save">Save</string>
+    <string name="nas_enabled">NAS upload enabled</string>
+    <string name="nas_disabled">NAS upload disabled</string>
+    <string name="nas_missing_config">Enter the NAS address and shared folder to enable uploads</string>
+</resources>

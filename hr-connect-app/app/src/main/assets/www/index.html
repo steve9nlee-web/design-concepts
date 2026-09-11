@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>HR Connect</title>
+<style>
+  :root{
+    --blue:#1e56d6; --blue-dark:#143c9e; --blue-soft:#e8efff;
+    --bg:#eef2f9; --card:#ffffff; --text:#1c2536; --muted:#7a869c;
+    --green:#1f9d55; --green-bg:#e6f6ec;
+    --red:#e5484d; --red-bg:#fdecec;
+    --amber:#b7791f; --amber-bg:#fdf3e0;
+    --radius:16px; --shadow:0 4px 16px rgba(28,52,110,.08);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;}
+  .page{display:none;min-height:100vh;padding-bottom:32px;}
+  .page.active{display:block;}
+  .container{padding:14px 16px;}
+
+  /* Header */
+  .hero{background:linear-gradient(135deg,var(--blue) 0%,#3b7af0 100%);color:#fff;
+    padding:18px 16px 60px;border-radius:0 0 26px 26px;}
+  .hero-top{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:#fff;color:var(--blue);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .bell{position:relative;width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .bell .dot{position:absolute;top:6px;right:7px;min-width:16px;height:16px;border-radius:8px;
+    background:var(--red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;
+    justify-content:center;padding:0 3px;}
+  .greet{margin-top:16px;}
+  .greet .hi{opacity:.85;font-size:13px;}
+  .greet .nm{font-size:20px;font-weight:700;margin-top:2px;}
+  .greet .dt{opacity:.8;font-size:12.5px;margin-top:4px;}
+
+  /* Page header for sub pages */
+  .pagehead{background:linear-gradient(135deg,var(--blue) 0%,#3b7af0 100%);color:#fff;
+    display:flex;align-items:center;gap:12px;padding:14px 16px;position:sticky;top:0;z-index:5;}
+  .backbtn{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.18);border:none;
+    color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;}
+  .pagehead h1{font-size:17px;margin:0;font-weight:700;}
+
+  /* Cards */
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:16px;margin-bottom:14px;}
+  .card h3{margin:0 0 10px;font-size:14px;color:var(--muted);font-weight:600;
+    text-transform:uppercase;letter-spacing:.4px;}
+
+  /* Check-in panel */
+  .checkin{margin:-46px 16px 14px;}
+  .clock-now{font-size:34px;font-weight:800;text-align:center;letter-spacing:1px;}
+  .shift-line{text-align:center;color:var(--muted);font-size:13px;margin-top:4px;}
+  .ci-btns{display:flex;gap:10px;margin-top:14px;}
+  .btn{flex:1;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;color:#fff;}
+  .btn:disabled{opacity:.45;}
+  .btn-in{background:var(--blue);}
+  .btn-out{background:#0f2c6b;}
+  .btn-ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue);}
+  .ci-status{display:flex;justify-content:space-around;margin-top:14px;text-align:center;}
+  .ci-status .v{font-weight:700;font-size:15px;}
+  .ci-status .k{color:var(--muted);font-size:11.5px;margin-top:2px;}
+
+  /* Feature grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 16px 14px;}
+  .tile{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;}
+  .tile .ic{width:44px;height:44px;border-radius:14px;background:var(--blue-soft);
+    display:flex;align-items:center;justify-content:center;font-size:21px;}
+  .tile .lb{font-size:12px;font-weight:600;text-align:center;color:var(--text);}
+  .tile .badge{position:absolute;top:8px;right:10px;min-width:18px;height:18px;border-radius:9px;
+    background:var(--red);color:#fff;font-size:10.5px;font-weight:700;display:flex;
+    align-items:center;justify-content:center;padding:0 4px;}
+
+  /* Chips */
+  .chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;}
+  .chip.late{background:var(--red-bg);color:var(--red);}
+  .chip.ontime{background:var(--green-bg);color:var(--green);}
+  .chip.pending{background:var(--amber-bg);color:var(--amber);}
+  .chip.approved{background:var(--green-bg);color:var(--green);}
+  .chip.rejected{background:var(--red-bg);color:var(--red);}
+  .chip.off{background:#eef1f6;color:var(--muted);}
+
+  /* Tabs */
+  .tabs{display:flex;background:#e3e9f5;border-radius:12px;padding:4px;margin-bottom:14px;}
+  .tabs button{flex:1;border:none;background:transparent;border-radius:9px;padding:9px 4px;
+    font-size:13px;font-weight:600;color:var(--muted);}
+  .tabs button.on{background:#fff;color:var(--blue);box-shadow:0 2px 6px rgba(28,52,110,.12);}
+
+  /* Attendance rows */
+  .att-row{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;
+    margin-bottom:10px;border-left:4px solid var(--green);}
+  .att-row.late{border-left-color:var(--red);}
+  .att-row .r1{display:flex;justify-content:space-between;align-items:center;}
+  .att-row .d{font-weight:700;font-size:13.5px;}
+  .att-row .r2{display:flex;gap:18px;margin-top:8px;color:var(--muted);font-size:12.5px;}
+  .att-row .r2 b{color:var(--text);font-weight:700;display:block;font-size:13.5px;margin-top:1px;}
+  .late-text{color:var(--red) !important;}
+
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .sumbox{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px;text-align:center;}
+  .sumbox .v{font-size:19px;font-weight:800;}
+  .sumbox .k{font-size:11px;color:var(--muted);margin-top:2px;}
+  .sumbox.red .v{color:var(--red);}
+  .sumbox.green .v{color:var(--green);}
+  .sumbox.blue .v{color:var(--blue);}
+
+  /* Forms */
+  label.fl{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 5px;}
+  label.fl .req{color:var(--red);}
+  input[type=text],input[type=date],input[type=time],input[type=email],input[type=tel],
+  input[type=number],select,textarea{
+    width:100%;border:1.5px solid #dde4f0;border-radius:12px;padding:12px;font-size:14px;
+    background:#fff;color:var(--text);font-family:inherit;}
+  textarea{min-height:74px;resize:vertical;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);}
+  .row2{display:flex;gap:10px;}
+  .row2>div{flex:1;}
+  .attach{border:1.5px dashed #b9c6e2;border-radius:12px;padding:14px;text-align:center;
+    color:var(--muted);font-size:13px;background:#f7f9fe;}
+  .attach.has{border-style:solid;border-color:var(--green);color:var(--green);background:var(--green-bg);}
+  .submitbar{margin-top:18px;}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;}
+
+  /* Request cards */
+  .req-card{background:var(--card);border-radius:14px;box-shadow:var(--shadow);
+    padding:14px;margin-bottom:12px;}
+  .req-card .r1{display:flex;justify-content:space-between;align-items:center;}
+  .req-card .t{font-weight:700;font-size:14px;}
+  .req-card .meta{color:var(--muted);font-size:12.5px;margin-top:6px;line-height:1.6;}
+  .req-card .desc{font-size:13px;margin-top:6px;}
+  .timeline{margin-top:10px;border-top:1px dashed #e2e8f4;padding-top:10px;}
+  .tl-item{display:flex;gap:10px;font-size:12.5px;margin-bottom:7px;}
+  .tl-item .dot{width:9px;height:9px;border-radius:50%;background:var(--blue);margin-top:4px;flex:none;}
+  .tl-item.g .dot{background:var(--green);}
+  .tl-item.r .dot{background:var(--red);}
+  .tl-item .ts{color:var(--muted);font-size:11px;}
+  .apr-btns{display:flex;gap:10px;margin-top:12px;}
+  .apr-btns button{flex:1;border:none;border-radius:11px;padding:11px;font-weight:700;font-size:13.5px;}
+  .b-approve{background:var(--green);color:#fff;}
+  .b-reject{background:var(--red-bg);color:var(--red);}
+  .doclink{display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:var(--blue-soft);
+    color:var(--blue);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:600;}
+
+  /* Roster */
+  .ros-day{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f3fa;}
+  .ros-day:last-child{border-bottom:none;}
+  .ros-day .dn{width:44px;font-weight:700;font-size:13px;}
+  .ros-day input[type=time]{padding:8px;font-size:13px;}
+  .switch{position:relative;width:44px;height:26px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:#cfd8ea;border-radius:13px;transition:.2s;}
+  .slider:before{content:"";position:absolute;width:20px;height:20px;border-radius:50%;
+    background:#fff;top:3px;left:3px;transition:.2s;}
+  .switch input:checked + .slider{background:var(--blue);}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
+  .cal{width:100%;border-collapse:collapse;table-layout:fixed;}
+  .cal th{font-size:11px;color:var(--muted);padding:6px 0;font-weight:600;}
+  .cal td{text-align:center;padding:2px 0;}
+  .cal .cd{width:34px;height:34px;line-height:34px;border-radius:50%;margin:0 auto;font-size:12.5px;position:relative;}
+  .cal .cd.ros{background:var(--blue-soft);color:var(--blue-dark);font-weight:600;}
+  .cal .cd.wk{background:var(--green-bg);color:var(--green);font-weight:700;}
+  .cal .cd.lt{background:var(--red-bg);color:var(--red);font-weight:700;}
+  .cal .cd.today{outline:2px solid var(--blue);}
+  .cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .cal-nav button{border:none;background:var(--blue-soft);color:var(--blue);width:32px;height:32px;
+    border-radius:10px;font-size:15px;font-weight:700;}
+  .legend{display:flex;gap:14px;justify-content:center;margin-top:10px;font-size:11.5px;color:var(--muted);}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;}
+
+  /* Profile */
+  .pf-head{display:flex;flex-direction:column;align-items:center;margin:-40px 16px 14px;}
+  .avatar{width:86px;height:86px;border-radius:50%;background:#fff;color:var(--blue);
+    display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;
+    box-shadow:var(--shadow);border:4px solid #fff;}
+  .pf-name{font-weight:800;font-size:18px;margin-top:8px;}
+  .pf-role{color:var(--muted);font-size:13px;margin-top:2px;}
+
+  .empty{text-align:center;color:var(--muted);padding:34px 20px;font-size:13.5px;}
+  .empty .big{font-size:34px;margin-bottom:8px;}
+
+  .banner{margin:0 16px 14px;background:var(--amber-bg);color:var(--amber);border-radius:12px;
+    padding:11px 14px;font-size:12.5px;display:flex;align-items:center;gap:10px;}
+  .banner button{border:none;background:var(--amber);color:#fff;border-radius:8px;
+    padding:6px 10px;font-size:11.5px;font-weight:700;white-space:nowrap;}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#16213c;color:#fff;
+    padding:11px 20px;border-radius:12px;font-size:13px;z-index:99;opacity:0;transition:.25s;
+    max-width:86%;text-align:center;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  .danger-btn{background:var(--red-bg);color:var(--red);border:none;border-radius:12px;
+    padding:12px;font-weight:700;width:100%;font-size:14px;}
+</style>
+</head>
+<body>
+
+<!-- ============ DASHBOARD ============ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-top">
+      <div class="brand"><span class="logo">HR</span> HR Connect</div>
+      <div class="bell" onclick="showPage('leave');switchTab('leave','mgmt')">&#128276;<span class="dot" id="bellDot" style="display:none">0</span></div>
+    </div>
+    <div class="greet">
+      <div class="hi" id="greetHi">Good morning,</div>
+      <div class="nm" id="greetName">Employee</div>
+      <div class="dt" id="greetDate"></div>
+    </div>
+  </div>
+
+  <div class="card checkin">
+    <div class="clock-now" id="clockNow">--:--:--</div>
+    <div class="shift-line" id="shiftLine">No shift rostered today</div>
+    <div class="shift-line" id="autoLine" style="display:none;color:var(--blue);font-weight:600"></div>
+    <div class="ci-btns">
+      <button class="btn btn-in" id="btnIn" onclick="clockIn()">Clock In</button>
+      <button class="btn btn-out" id="btnOut" onclick="clockOut()">Clock Out</button>
+    </div>
+    <div class="ci-status">
+      <div><div class="v" id="ciIn">--:--</div><div class="k">Clock in</div></div>
+      <div><div class="v" id="ciOut">--:--</div><div class="k">Clock out</div></div>
+      <div><div class="v" id="ciHrs">0h 0m</div><div class="k">Worked</div></div>
+    </div>
+    <div style="text-align:center;margin-top:10px;" id="ciChipWrap"></div>
+  </div>
+
+  <div class="banner" id="demoBanner" style="display:none">
+    <span>Sample data is loaded so you can explore the app.</span>
+    <button onclick="clearDemo()">Clear it</button>
+  </div>
+
+  <div class="grid">
+    <div class="tile" onclick="showPage('profile')"><div class="ic">&#128100;</div><div class="lb">Profile</div></div>
+    <div class="tile" onclick="showPage('attendance')"><div class="ic">&#128337;</div><div class="lb">Attendance</div></div>
+    <div class="tile" onclick="showPage('leave')"><div class="ic">&#127796;</div><div class="lb">Leave</div><span class="badge" id="bdgLeave" style="display:none">0</span></div>
+    <div class="tile" onclick="showPage('overtime')"><div class="ic">&#9202;</div><div class="lb">Overtime</div><span class="badge" id="bdgOt" style="display:none">0</span></div>
+    <div class="tile" onclick="showPage('roster')"><div class="ic">&#128197;</div><div class="lb">Rostered Hours</div></div>
+    <div class="tile" onclick="showPage('attendance')"><div class="ic">&#128203;</div><div class="lb">History</div></div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h3>This week</h3>
+      <div class="summary" style="margin-bottom:0">
+        <div class="sumbox blue"><div class="v" id="wkHours">0h</div><div class="k">Worked</div></div>
+        <div class="sumbox green"><div class="v" id="wkDays">0</div><div class="k">Days present</div></div>
+        <div class="sumbox red"><div class="v" id="wkLate">0</div><div class="k">Late arrivals</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PROFILE ============ -->
+<div class="page" id="page-profile">
+  <div class="pagehead"><button class="backbtn" onclick="showPage('home')">&#8592;</button><h1>Profile</h1></div>
+  <div class="hero" style="padding-bottom:56px"></div>
+  <div class="pf-head">
+    <div class="avatar" id="pfAvatar">?</div>
+    <div class="pf-name" id="pfName">Employee</div>
+    <div class="pf-role" id="pfRole">&nbsp;</div>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h3>Employee details</h3>
+      <label class="fl">Full name <span class="req">*</span></label>
+      <input type="text" id="pName" placeholder="e.g. Aisyah Rahman">
+      <div class="row2">
+        <div><label class="fl">Employee ID</label><input type="text" id="pEmpId" placeholder="EMP-0001"></div>
+        <div><label class="fl">Join date</label><input type="date" id="pJoined"></div>
+      </div>
+      <div class="row2">
+        <div><label class="fl">Department</label><input type="text" id="pDept" placeholder="Human Resources"></div>
+        <div><label class="fl">Position</label><input type="text" id="pPos" placeholder="HR Executive"></div>
+      </div>
+      <label class="fl">Email</label>
+      <input type="email" id="pEmail" placeholder="name@company.com">
+      <label class="fl">Phone</label>
+      <input type="tel" id="pPhone" placeholder="+60 12-345 6789">
+      <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="saveProfile()">Save profile</button></div>
+    </div>
+    <div class="card">
+      <h3>Automatic WiFi clock-in / out</h3>
+      <div id="autoNoBridge" class="hint" style="display:none;margin:0">Available on the phone app only.</div>
+      <div id="autoCfg">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:600;font-size:14px">Enable auto clock</span>
+          <label class="switch"><input type="checkbox" id="acOn"><span class="slider"></span></label>
+        </div>
+        <p class="hint">Clock in when this phone joins the company WiFi, clock out after leaving it. Needs location permission ("Allow all the time") so Android lets the app read the WiFi name.</p>
+        <label class="fl">Company WiFi name (SSID)</label>
+        <input type="text" id="acSsid" placeholder="e.g. Company-Office">
+        <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="useCurrentWifi()">Use the WiFi I'm connected to now</button>
+        <label class="fl">Clock-out grace period (minutes)</label>
+        <input type="number" id="acGrace" min="0" max="120" value="10">
+        <p class="hint">Short WiFi drops (lifts, phone sleeping) within this period are ignored.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+          <span style="font-weight:600;font-size:14px">GPS cross-check</span>
+          <label class="switch"><input type="checkbox" id="acGps" onchange="toggleGpsFields()"><span class="slider"></span></label>
+        </div>
+        <p class="hint">Extra security: only auto clock-in when the phone is also physically near the office — a home hotspot named like the office WiFi won't work.</p>
+        <div id="gpsFields" style="display:none">
+          <div class="row2">
+            <div><label class="fl">Office latitude</label><input type="text" id="acLat" placeholder="3.13900" inputmode="decimal"></div>
+            <div><label class="fl">Office longitude</label><input type="text" id="acLng" placeholder="101.68690" inputmode="decimal"></div>
+          </div>
+          <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="useCurrentLocation()">Use my current location (I'm at the office)</button>
+          <p class="hint" id="gpsCapHint"></p>
+          <label class="fl">Allowed radius (meters)</label>
+          <input type="number" id="acRadius" min="50" max="5000" value="200">
+          <p class="hint">200 m suits most offices; use more for large sites, where GPS is weak indoors, or if clock-ins get wrongly refused.</p>
+        </div>
+        <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="saveAutoCfg()">Save auto-clock settings</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Data</h3>
+      <p class="hint" style="margin-top:0">Attendance history is kept on this phone for the last 3 months. Older records are removed automatically.</p>
+      <button class="btn btn-ghost" style="width:100%;margin-bottom:10px" onclick="loadDemo()">Load sample data</button>
+      <button class="danger-btn" onclick="wipeAll()">Clear all app data</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ATTENDANCE ============ -->
+<div class="page" id="page-attendance">
+  <div class="pagehead"><button class="backbtn" onclick="showPage('home')">&#8592;</button><h1>Attendance</h1></div>
+  <div class="container">
+    <div class="tabs" id="attTabs">
+      <button class="on" onclick="setAttFilter('week',this)">This week</button>
+      <button onclick="setAttFilter('month',this)">This month</button>
+      <button onclick="setAttFilter('all',this)">Last 3 months</button>
+    </div>
+    <div class="summary">
+      <div class="sumbox blue"><div class="v" id="atHours">0h</div><div class="k">Total hours</div></div>
+      <div class="sumbox green"><div class="v" id="atDays">0</div><div class="k">Days present</div></div>
+      <div class="sumbox red"><div class="v" id="atLate">0</div><div class="k">Late arrivals</div></div>
+    </div>
+    <div id="attList"></div>
+  </div>
+</div>
+
+<!-- ============ LEAVE ============ -->
+<div class="page" id="page-leave">
+  <div class="pagehead"><button class="backbtn" onclick="showPage('home')">&#8592;</button><h1>Leave</h1></div>
+  <div class="container">
+    <div class="tabs" id="leaveTabs">
+      <button class="on" onclick="switchTab('leave','apply',this)">Apply</button>
+      <button onclick="switchTab('leave','hist',this)">History</button>
+      <button onclick="switchTab('leave','mgmt',this)">Management</button>
+    </div>
+
+    <div id="leave-apply">
+      <div class="card">
+        <h3>Leave details</h3>
+        <label class="fl">Leave category <span class="req">*</span></label>
+        <select id="lvCat">
+          <option value="">- Select -</option>
+          <option>Annual Leave</option><option>Medical Leave</option><option>Emergency Leave</option>
+          <option>Unpaid Leave</option><option>Maternity / Paternity</option><option>Compassionate Leave</option>
+        </select>
+        <label class="fl">Leave reason <span class="req">*</span></label>
+        <select id="lvReason">
+          <option value="">- Select -</option>
+          <option>Personal matters</option><option>Medical appointment</option><option>Family event</option>
+          <option>Travel / vacation</option><option>Illness</option><option>Other</option>
+        </select>
+        <label class="fl">Description</label>
+        <textarea id="lvDesc" placeholder="Write leave description..."></textarea>
+        <div class="row2">
+          <div><label class="fl">From <span class="req">*</span></label><input type="date" id="lvFrom" onchange="lvDays()"></div>
+          <div><label class="fl">To <span class="req">*</span></label><input type="date" id="lvTo" onchange="lvDays()"></div>
+        </div>
+        <p class="hint" id="lvDaysHint"></p>
+        <label class="fl">Document (if applicable)</label>
+        <div class="attach" id="lvAttach" onclick="document.getElementById('lvFile').click()">
+          &#128206; Tap to attach a document<br><span style="font-size:11px">MC, letter, photo or PDF</span>
+        </div>
+        <input type="file" id="lvFile" style="display:none" onchange="lvFilePicked(this)">
+        <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="submitLeave()">Apply leave</button></div>
+      </div>
+    </div>
+
+    <div id="leave-hist" style="display:none"></div>
+
+    <div id="leave-mgmt" style="display:none">
+      <p class="hint" style="margin:0 0 12px">Approver panel — approve or reject pending requests. The employee's history updates in real time.</p>
+      <div id="leaveMgmtList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ OVERTIME ============ -->
+<div class="page" id="page-overtime">
+  <div class="pagehead"><button class="backbtn" onclick="showPage('home')">&#8592;</button><h1>Overtime</h1></div>
+  <div class="container">
+    <div class="tabs" id="otTabs">
+      <button class="on" onclick="switchTab('ot','apply',this)">Apply</button>
+      <button onclick="switchTab('ot','hist',this)">History</button>
+      <button onclick="switchTab('ot','mgmt',this)">Management</button>
+    </div>
+
+    <div id="ot-apply">
+      <div class="card">
+        <h3>Overtime details</h3>
+        <label class="fl">Date <span class="req">*</span></label>
+        <input type="date" id="otDate">
+        <div class="row2">
+          <div><label class="fl">Starting time <span class="req">*</span></label><input type="time" id="otStart" onchange="otHours()"></div>
+          <div><label class="fl">Ending time <span class="req">*</span></label><input type="time" id="otEnd" onchange="otHours()"></div>
+        </div>
+        <p class="hint" id="otHoursHint"></p>
+        <label class="fl">Overtime reason <span class="req">*</span></label>
+        <select id="otReason">
+          <option value="">- Select -</option>
+          <option>Project deadline</option><option>Month-end closing</option><option>Urgent support</option>
+          <option>Event / roadshow</option><option>Stock take</option><option>Other</option>
+        </select>
+        <label class="fl">Overtime description</label>
+        <textarea id="otDesc" placeholder="Overtime description..."></textarea>
+        <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="submitOt()">Apply overtime</button></div>
+      </div>
+    </div>
+
+    <div id="ot-hist" style="display:none"></div>
+
+    <div id="ot-mgmt" style="display:none">
+      <p class="hint" style="margin:0 0 12px">Approver panel — approve or reject pending overtime.</p>
+      <div id="otMgmtList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ROSTER ============ -->
+<div class="page" id="page-roster">
+  <div class="pagehead"><button class="backbtn" onclick="showPage('home')">&#8592;</button><h1>Rostered Hours</h1></div>
+  <div class="container">
+    <div class="card">
+      <h3>My shift today</h3>
+      <div id="rosToday" style="font-weight:700;font-size:16px">-</div>
+      <p class="hint" id="rosWeekTotal"></p>
+    </div>
+    <div class="card">
+      <h3>Calendar</h3>
+      <div class="cal-nav">
+        <button onclick="calMove(-1)">&#8249;</button>
+        <div style="font-weight:700" id="calTitle"></div>
+        <button onclick="calMove(1)">&#8250;</button>
+      </div>
+      <table class="cal">
+        <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+        <tbody id="calBody"></tbody>
+      </table>
+      <div class="legend">
+        <span><i style="background:var(--blue-soft)"></i>Rostered</span>
+        <span><i style="background:var(--green-bg)"></i>Worked</span>
+        <span><i style="background:var(--red-bg)"></i>Late</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Weekly roster</h3>
+      <div id="rosterEditor"></div>
+      <label class="fl">Late grace period (minutes)</label>
+      <input type="number" id="rosGrace" min="0" max="60" value="10">
+      <div class="submitbar"><button class="btn btn-in" style="width:100%" onclick="saveRoster()">Save roster</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ================= Storage ================= */
+var K = { profile:'hrc1_profile', roster:'hrc1_roster', att:'hrc1_att',
+          leaves:'hrc1_leaves', ot:'hrc1_ot', demo:'hrc1_demo', init:'hrc1_init' };
+function load(k, dflt){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : dflt; }catch(e){ return dflt; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ toast('Could not save data'); } }
+
+var profile, roster, att, leaves, ot;
+function loadAll(){
+  profile = load(K.profile, {name:'', empId:'', dept:'', pos:'', email:'', phone:'', joined:''});
+  roster  = load(K.roster, defaultRoster());
+  att     = load(K.att, []);
+  leaves  = load(K.leaves, []);
+  ot      = load(K.ot, []);
+}
+function defaultRoster(){
+  var days = {};
+  for (var i=0;i<7;i++) days[i] = (i>=1 && i<=5) ? {on:true,start:'09:00',end:'18:00'} : {on:false,start:'09:00',end:'18:00'};
+  return {days:days, grace:10};
+}
+
+/* ================= Helpers ================= */
+function pad(n){ return (n<10?'0':'')+n; }
+function todayKey(d){ d = d || new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fmtDate(key){
+  var p = key.split('-'); var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+  var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  return wd+', '+pad(d.getDate())+' '+mo+' '+d.getFullYear();
+}
+function fmtDateShort(key){
+  var p = key.split('-'); var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  return pad(d.getDate())+' '+mo+' '+d.getFullYear();
+}
+function nowTime(){ var d = new Date(); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function nowStamp(){ var d = new Date(); return fmtDateShort(todayKey(d))+' '+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function minsOf(t){ if(!t) return null; var p = t.split(':'); return (+p[0])*60 + (+p[1]); }
+function hoursBetween(a,b){
+  var m = minsOf(b) - minsOf(a); if (m < 0) m += 24*60; return m;
+}
+function fmtDur(mins){ return Math.floor(mins/60)+'h '+(mins%60)+'m'; }
+function toast(msg){
+  var t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show';
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.className = 'toast'; }, 2600);
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid(){ return 'r' + Date.now() + Math.floor(Math.random()*1000); }
+function rosterFor(dateKey){
+  var p = dateKey.split('-'); var d = new Date(+p[0], +p[1]-1, +p[2]);
+  return roster.days[d.getDay()];
+}
+
+/* Purge attendance older than 3 months (92 days) */
+function purgeOld(){
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-92);
+  var ck = todayKey(cutoff);
+  var before = att.length;
+  att = att.filter(function(a){ return a.d >= ck; });
+  if (att.length !== before) save(K.att, att);
+}
+
+/* ================= Navigation ================= */
+var currentPage = 'home';
+function showPage(p){
+  var pages = document.querySelectorAll('.page');
+  for (var i=0;i<pages.length;i++) pages[i].className = 'page';
+  document.getElementById('page-'+p).className = 'page active';
+  currentPage = p;
+  window.scrollTo(0,0);
+  if (p==='home') renderHome();
+  if (p==='profile') renderProfile();
+  if (p==='attendance') renderAttendance();
+  if (p==='leave'){ renderLeaveHist(); renderLeaveMgmt(); }
+  if (p==='overtime'){ renderOtHist(); renderOtMgmt(); }
+  if (p==='roster') renderRoster();
+}
+function appBack(){
+  if (currentPage !== 'home'){ showPage('home'); return 'home'; }
+  return 'exit';
+}
+function switchTab(group, tab, btn){
+  var panes = { leave:['apply','hist','mgmt'], ot:['apply','hist','mgmt'] };
+  var list = panes[group];
+  for (var i=0;i<list.length;i++){
+    var el = document.getElementById(group+'-'+list[i]);
+    if (el) el.style.display = (list[i]===tab) ? 'block' : 'none';
+  }
+  var tabsEl = document.getElementById(group==='leave' ? 'leaveTabs' : 'otTabs');
+  var btns = tabsEl.querySelectorAll('button');
+  for (var j=0;j<btns.length;j++) btns[j].className = '';
+  if (btn) btn.className = 'on';
+  else { var idx = list.indexOf(tab); if (idx>=0 && btns[idx]) btns[idx].className = 'on'; }
+}
+
+/* ================= Dashboard / Check-in ================= */
+function tickClock(){
+  var d = new Date();
+  document.getElementById('clockNow').textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+}
+setInterval(tickClock, 1000);
+
+function todayRec(){
+  var k = todayKey();
+  for (var i=0;i<att.length;i++) if (att[i].d===k) return att[i];
+  return null;
+}
+function renderHome(){
+  var d = new Date();
+  var h = d.getHours();
+  document.getElementById('greetHi').textContent = h<12 ? 'Good morning,' : (h<17 ? 'Good afternoon,' : 'Good evening,');
+  document.getElementById('greetName').textContent = profile.name || 'Set up your profile';
+  document.getElementById('greetDate').textContent = fmtDate(todayKey());
+  tickClock();
+
+  var rd = roster.days[d.getDay()];
+  document.getElementById('shiftLine').textContent = rd.on
+    ? ('Today\'s shift: '+rd.start+' – '+rd.end+' (grace '+roster.grace+' min)')
+    : 'No shift rostered today';
+
+  var acfg = autoCfg();
+  var al = document.getElementById('autoLine');
+  if (acfg && acfg.enabled && acfg.ssid){
+    al.style.display = 'block';
+    al.textContent = '⚡ Auto clock on WiFi "'+acfg.ssid+'"'+(acfg.gps ? ' + GPS check' : '');
+  } else al.style.display = 'none';
+
+  var rec = todayRec();
+  document.getElementById('ciIn').textContent = rec && rec.in ? rec.in : '--:--';
+  document.getElementById('ciOut').textContent = rec && rec.out ? rec.out : '--:--';
+  var worked = 0;
+  if (rec && rec.in) worked = hoursBetween(rec.in, rec.out || nowTime());
+  document.getElementById('ciHrs').textContent = fmtDur(worked);
+  document.getElementById('ciIn').className = 'v' + (rec && rec.late ? ' late-text' : '');
+
+  document.getElementById('btnIn').disabled = !!(rec && rec.in);
+  document.getElementById('btnOut').disabled = !(rec && rec.in) || !!(rec && rec.out);
+
+  var wrap = document.getElementById('ciChipWrap');
+  if (rec && rec.in){
+    wrap.innerHTML = rec.late
+      ? '<span class="chip late">Late arrival</span>'
+      : '<span class="chip ontime">On time</span>';
+    if (rec.loc) wrap.innerHTML += ' <span class="chip off">&#128205; ' + esc(rec.loc) + '</span>';
+  } else wrap.innerHTML = '';
+
+  /* Week summary */
+  var monday = new Date(); var dow = (monday.getDay()+6)%7; monday.setDate(monday.getDate()-dow);
+  var mk = todayKey(monday), mins = 0, days = 0, lates = 0;
+  for (var i=0;i<att.length;i++){
+    var a = att[i];
+    if (a.d >= mk && a.in){
+      days++; if (a.late) lates++;
+      if (a.out) mins += hoursBetween(a.in, a.out);
+    }
+  }
+  document.getElementById('wkHours').textContent = Math.round(mins/60*10)/10 + 'h';
+  document.getElementById('wkDays').textContent = days;
+  document.getElementById('wkLate').textContent = lates;
+
+  /* Badges: pending approvals */
+  var pl = leaves.filter(function(x){return x.status==='pending';}).length;
+  var po = ot.filter(function(x){return x.status==='pending';}).length;
+  setBadge('bdgLeave', pl); setBadge('bdgOt', po);
+  var bell = document.getElementById('bellDot');
+  if (pl+po>0){ bell.style.display='flex'; bell.textContent = pl+po; } else bell.style.display='none';
+
+  document.getElementById('demoBanner').style.display = load(K.demo,false) ? 'flex' : 'none';
+}
+function setBadge(id, n){
+  var el = document.getElementById(id);
+  if (n>0){ el.style.display='flex'; el.textContent = n; } else el.style.display='none';
+}
+
+function captureLocation(cb){
+  if (!navigator.geolocation){ cb(null); return; }
+  var done = false;
+  var timer = setTimeout(function(){ if(!done){ done=true; cb(null); } }, 6000);
+  navigator.geolocation.getCurrentPosition(function(pos){
+    if (done) return; done = true; clearTimeout(timer);
+    cb(pos.coords.latitude.toFixed(4)+', '+pos.coords.longitude.toFixed(4));
+  }, function(){ if(!done){ done=true; clearTimeout(timer); cb(null); } }, {timeout:5000, maximumAge:60000});
+}
+
+function clockIn(){
+  if (todayRec()){ toast('Already clocked in today'); return; }
+  var btn = document.getElementById('btnIn');
+  btn.disabled = true; btn.textContent = 'Locating...';
+  captureLocation(function(loc){
+    btn.textContent = 'Clock In';
+    var k = todayKey(), t = nowTime();
+    var rd = roster.days[new Date().getDay()];
+    var late = false;
+    if (rd.on) late = minsOf(t) > minsOf(rd.start) + (+roster.grace || 0);
+    att.push({d:k, in:t, out:null, late:late, loc:loc});
+    att.sort(function(a,b){ return a.d<b.d?1:-1; });
+    save(K.att, att);
+    toast(late ? 'Clocked in at '+t+' — flagged LATE' : 'Clocked in at '+t+' — on time');
+    renderHome();
+  });
+}
+function clockOut(){
+  var rec = todayRec();
+  if (!rec || !rec.in){ toast('Clock in first'); return; }
+  if (rec.out){ toast('Already clocked out'); return; }
+  rec.out = nowTime();
+  save(K.att, att);
+  toast('Clocked out at '+rec.out+' — worked '+fmtDur(hoursBetween(rec.in, rec.out)));
+  renderHome();
+}
+
+/* ================= WiFi auto clock ================= */
+function bridge(){ return (typeof AndroidBridge !== 'undefined') ? AndroidBridge : null; }
+function autoCfg(){
+  var b = bridge();
+  if (!b || !b.getAutoConfig) return null;
+  try { return JSON.parse(b.getAutoConfig() || '{}'); } catch(e){ return {}; }
+}
+function renderAutoCard(){
+  var b = bridge();
+  var has = b && b.getAutoConfig;
+  document.getElementById('autoNoBridge').style.display = has ? 'none' : 'block';
+  document.getElementById('autoCfg').style.display = has ? 'block' : 'none';
+  if (!has) return;
+  var cfg = autoCfg() || {};
+  document.getElementById('acOn').checked = !!cfg.enabled;
+  document.getElementById('acSsid').value = cfg.ssid || '';
+  document.getElementById('acGrace').value = (cfg.grace != null) ? cfg.grace : 10;
+  document.getElementById('acGps').checked = !!cfg.gps;
+  document.getElementById('acLat').value = (cfg.lat != null) ? cfg.lat : '';
+  document.getElementById('acLng').value = (cfg.lng != null) ? cfg.lng : '';
+  document.getElementById('acRadius').value = (cfg.radius != null) ? cfg.radius : 200;
+  toggleGpsFields();
+}
+function toggleGpsFields(){
+  document.getElementById('gpsFields').style.display =
+    document.getElementById('acGps').checked ? 'block' : 'none';
+}
+function useCurrentLocation(){
+  if (!navigator.geolocation){ toast('Location not available on this device'); return; }
+  var hint = document.getElementById('gpsCapHint');
+  hint.textContent = 'Getting location…';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    document.getElementById('acLat').value = pos.coords.latitude.toFixed(5);
+    document.getElementById('acLng').value = pos.coords.longitude.toFixed(5);
+    hint.textContent = 'Office location captured (±'+Math.round(pos.coords.accuracy)+' m accuracy)';
+    toast('Office location captured');
+  }, function(){
+    hint.textContent = '';
+    toast('Could not get location — check permission and Location Services');
+  }, {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
+}
+function useCurrentWifi(){
+  var b = bridge();
+  if (!b || !b.getCurrentSsid) return;
+  var ssid = b.getCurrentSsid();
+  if (ssid){ document.getElementById('acSsid').value = ssid; toast('WiFi detected: '+ssid); }
+  else if (b.hasLocation && !b.hasLocation()){
+    toast('Grant location permission first, then try again');
+    if (b.setAutoConfig) b.setAutoConfig(JSON.stringify({enabled:true, ssid:'', grace:10}));
+  } else {
+    toast('Not connected to WiFi, or Location Services is off');
+  }
+}
+function saveAutoCfg(){
+  var b = bridge();
+  if (!b || !b.setAutoConfig) return;
+  var on = document.getElementById('acOn').checked;
+  var ssid = document.getElementById('acSsid').value.trim();
+  var grace = Math.max(0, +document.getElementById('acGrace').value || 0);
+  var gps = document.getElementById('acGps').checked;
+  var lat = parseFloat(document.getElementById('acLat').value);
+  var lng = parseFloat(document.getElementById('acLng').value);
+  var radius = Math.max(50, +document.getElementById('acRadius').value || 200);
+  if (on && !ssid){ toast('Enter the company WiFi name first'); return; }
+  if (on && gps && (isNaN(lat) || isNaN(lng))){
+    toast('Set the office location first (tap "Use my current location" at the office)'); return;
+  }
+  var cfg = {enabled:on, ssid:ssid, grace:grace, gps:gps};
+  if (gps){ cfg.lat = lat; cfg.lng = lng; cfg.radius = radius; }
+  b.setAutoConfig(JSON.stringify(cfg));
+  toast(on ? ('Auto clock enabled for "'+ssid+'"'+(gps?' with GPS check':'')) : 'Auto clock disabled');
+  renderHome();
+}
+function syncAutoEvents(){
+  var b = bridge();
+  if (!b || !b.getPendingEvents) return;
+  var evs;
+  try { evs = JSON.parse(b.getPendingEvents() || '[]'); } catch(e){ return; }
+  if (!evs.length) return;
+  var changed = false;
+  for (var i=0;i<evs.length;i++){
+    var ev = evs[i];
+    var d = new Date(ev.ts);
+    var key = todayKey(d);
+    var t = pad(d.getHours())+':'+pad(d.getMinutes());
+    var rec = null;
+    for (var j=0;j<att.length;j++) if (att[j].d===key){ rec = att[j]; break; }
+    if (ev.type === 'in'){
+      if (!rec){
+        var rd = rosterFor(key);
+        var late = rd && rd.on ? (minsOf(t) > minsOf(rd.start) + (+roster.grace||0)) : false;
+        att.push({d:key, in:t, out:null, late:late, loc:(ev.loc || 'Company WiFi'), auto:true});
+        changed = true;
+      }
+    } else {
+      if (rec && rec.in && (!rec.out || minsOf(t) > minsOf(rec.out))){
+        rec.out = t; rec.auto = true; changed = true;
+      }
+    }
+  }
+  b.clearPendingEvents();
+  if (changed){
+    att.sort(function(a,c){ return a.d<c.d?1:-1; });
+    save(K.att, att);
+    if (currentPage==='home') renderHome();
+    if (currentPage==='attendance') renderAttendance();
+    toast('Attendance updated from WiFi auto clock');
+  }
+}
+setInterval(syncAutoEvents, 20000);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) syncAutoEvents(); });
+
+/* ================= Profile ================= */
+function renderProfile(){
+  renderAutoCard();
+  document.getElementById('pName').value = profile.name || '';
+  document.getElementById('pEmpId').value = profile.empId || '';
+  document.getElementById('pJoined').value = profile.joined || '';
+  document.getElementById('pDept').value = profile.dept || '';
+  document.getElementById('pPos').value = profile.pos || '';
+  document.getElementById('pEmail').value = profile.email || '';
+  document.getElementById('pPhone').value = profile.phone || '';
+  var initials = (profile.name || '?').split(' ').map(function(w){return w.charAt(0);}).join('').substring(0,2).toUpperCase();
+  document.getElementById('pfAvatar').textContent = initials || '?';
+  document.getElementById('pfName').textContent = profile.name || 'Employee';
+  document.getElementById('pfRole').textContent = [profile.pos, profile.dept].filter(Boolean).join(' · ') || ' ';
+}
+function saveProfile(){
+  var name = document.getElementById('pName').value.trim();
+  if (!name){ toast('Please enter your full name'); return; }
+  profile = { name:name,
+    empId: document.getElementById('pEmpId').value.trim(),
+    joined: document.getElementById('pJoined').value,
+    dept: document.getElementById('pDept').value.trim(),
+    pos: document.getElementById('pPos').value.trim(),
+    email: document.getElementById('pEmail').value.trim(),
+    phone: document.getElementById('pPhone').value.trim() };
+  save(K.profile, profile);
+  renderProfile();
+  toast('Profile saved');
+}
+
+/* ================= Attendance ================= */
+var attFilter = 'week';
+function setAttFilter(f, btn){
+  attFilter = f;
+  var btns = document.getElementById('attTabs').querySelectorAll('button');
+  for (var i=0;i<btns.length;i++) btns[i].className = '';
+  btn.className = 'on';
+  renderAttendance();
+}
+function renderAttendance(){
+  var from;
+  var now = new Date();
+  if (attFilter==='week'){ from = new Date(); var dow=(from.getDay()+6)%7; from.setDate(from.getDate()-dow); }
+  else if (attFilter==='month'){ from = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else { from = new Date(); from.setDate(from.getDate()-92); }
+  var fk = todayKey(from);
+  var rows = att.filter(function(a){ return a.d >= fk; });
+  rows.sort(function(a,b){ return a.d<b.d?1:-1; });
+
+  var mins=0, days=0, lates=0, html='';
+  for (var i=0;i<rows.length;i++){
+    var a = rows[i];
+    if (a.in){ days++; if (a.late) lates++; if (a.out) mins += hoursBetween(a.in,a.out); }
+    var dur = (a.in && a.out) ? fmtDur(hoursBetween(a.in,a.out)) : (a.in ? 'In progress' : '-');
+    html += '<div class="att-row'+(a.late?' late':'')+'">'
+      + '<div class="r1"><span class="d">'+fmtDate(a.d)+'</span>'
+      + '<span class="chip '+(a.late?'late">Late':'ontime">On time')+'</span></div>'
+      + '<div class="r2">'
+      + '<span>Clock in<b class="'+(a.late?'late-text':'')+'">'+(a.in||'--:--')+'</b></span>'
+      + '<span>Clock out<b>'+(a.out||'--:--')+'</b></span>'
+      + '<span>Total<b>'+dur+'</b></span>'
+      + (a.auto ? '<span>Mode<b>&#9889; Auto</b></span>' : (a.loc ? '<span>Location<b>&#128205;</b></span>' : ''))
+      + '</div></div>';
+  }
+  document.getElementById('atHours').textContent = Math.round(mins/60*10)/10+'h';
+  document.getElementById('atDays').textContent = days;
+  document.getElementById('atLate').textContent = lates;
+  document.getElementById('attList').innerHTML = html ||
+    '<div class="empty"><div class="big">&#128337;</div>No attendance records yet.<br>Clock in from the dashboard to start tracking.</div>';
+}
+
+/* ================= Leave ================= */
+var lvDoc = null;
+function lvDays(){
+  var f = document.getElementById('lvFrom').value, t = document.getElementById('lvTo').value;
+  var hint = document.getElementById('lvDaysHint');
+  if (f && t){
+    var days = Math.round((new Date(t) - new Date(f))/86400000)+1;
+    hint.textContent = days>0 ? days+' day'+(days>1?'s':'')+' of leave' : 'End date must be after start date';
+  } else hint.textContent = '';
+}
+function lvFilePicked(input){
+  var f = input.files && input.files[0];
+  var box = document.getElementById('lvAttach');
+  if (!f){ lvDoc=null; box.className='attach'; box.innerHTML='&#128206; Tap to attach a document<br><span style="font-size:11px">MC, letter, photo or PDF</span>'; return; }
+  lvDoc = {name:f.name, size:f.size, data:null};
+  box.className = 'attach has';
+  box.innerHTML = '&#9989; ' + esc(f.name) + ' ('+Math.round(f.size/1024)+' KB)';
+  if (f.size <= 1500000){
+    var r = new FileReader();
+    r.onload = function(){ if (lvDoc) lvDoc.data = r.result; };
+    r.readAsDataURL(f);
+  }
+}
+function submitLeave(){
+  var cat = document.getElementById('lvCat').value;
+  var reason = document.getElementById('lvReason').value;
+  var from = document.getElementById('lvFrom').value;
+  var to = document.getElementById('lvTo').value;
+  if (!cat || !reason){ toast('Select a leave category and reason'); return; }
+  if (!from || !to){ toast('Pick the leave dates'); return; }
+  var days = Math.round((new Date(to)-new Date(from))/86400000)+1;
+  if (days <= 0){ toast('End date must be after start date'); return; }
+  leaves.unshift({ id:uid(), cat:cat, reason:reason,
+    desc: document.getElementById('lvDesc').value.trim(),
+    from:from, to:to, days:days, doc:lvDoc, status:'pending', note:'',
+    created: nowStamp(),
+    timeline: [{t:nowStamp(), label:'Application submitted', c:''},
+               {t:'', label:'Waiting for approval', c:''}] });
+  save(K.leaves, leaves);
+  document.getElementById('lvCat').value=''; document.getElementById('lvReason').value='';
+  document.getElementById('lvDesc').value=''; document.getElementById('lvFrom').value='';
+  document.getElementById('lvTo').value=''; document.getElementById('lvFile').value='';
+  lvDoc = null; lvFilePicked(document.getElementById('lvFile')); lvDays();
+  renderLeaveHist(); renderLeaveMgmt();
+  switchTab('leave','hist');
+  toast('Leave application submitted');
+}
+function reqCard(r, kind, forMgmt){
+  var title = kind==='leave'
+    ? esc(r.cat)+' · '+r.days+' day'+(r.days>1?'s':'')
+    : 'Overtime · '+r.hours+'h';
+  var meta = kind==='leave'
+    ? fmtDateShort(r.from)+' → '+fmtDateShort(r.to)+'<br>Reason: '+esc(r.reason)
+    : fmtDateShort(r.date)+' · '+r.start+' – '+r.end+'<br>Reason: '+esc(r.reason);
+  var html = '<div class="req-card">'
+    + '<div class="r1"><span class="t">'+title+'</span><span class="chip '+r.status+'">'
+    + r.status.charAt(0).toUpperCase()+r.status.slice(1)+'</span></div>'
+    + '<div class="meta">'+meta+'</div>'
+    + (r.desc ? '<div class="desc">'+esc(r.desc)+'</div>' : '');
+  if (r.doc) html += '<div><span class="doclink">&#128206; '+esc(r.doc.name)+' ('+Math.round(r.doc.size/1024)+' KB)</span></div>';
+  if (r.note) html += '<div class="desc" style="color:var(--muted)">Approver note: '+esc(r.note)+'</div>';
+  html += '<div class="timeline">';
+  for (var i=0;i<r.timeline.length;i++){
+    var tl = r.timeline[i];
+    html += '<div class="tl-item '+tl.c+'"><span class="dot"></span><div>'+esc(tl.label)
+         + (tl.t?'<div class="ts">'+esc(tl.t)+'</div>':'')+'</div></div>';
+  }
+  html += '</div>';
+  if (forMgmt && r.status==='pending'){
+    html += '<div class="apr-btns">'
+      + '<button class="b-approve" onclick="decide(\''+kind+'\',\''+r.id+'\',true)">Approve</button>'
+      + '<button class="b-reject" onclick="decide(\''+kind+'\',\''+r.id+'\',false)">Reject</button></div>';
+  }
+  return html + '</div>';
+}
+function renderLeaveHist(){
+  var el = document.getElementById('leave-hist');
+  if (!leaves.length){ el.innerHTML = '<div class="empty"><div class="big">&#127796;</div>No leave applications yet.</div>'; return; }
+  var html = '';
+  for (var i=0;i<leaves.length;i++) html += reqCard(leaves[i],'leave',false);
+  el.innerHTML = html;
+}
+function renderLeaveMgmt(){
+  var pend = leaves.filter(function(x){return x.status==='pending';});
+  var el = document.getElementById('leaveMgmtList');
+  if (!pend.length){ el.innerHTML = '<div class="empty"><div class="big">&#9989;</div>No pending leave requests.</div>'; return; }
+  var html = '';
+  for (var i=0;i<pend.length;i++) html += reqCard(pend[i],'leave',true);
+  el.innerHTML = html;
+}
+function decide(kind, id, ok){
+  var list = kind==='leave' ? leaves : ot;
+  var r = null;
+  for (var i=0;i<list.length;i++) if (list[i].id===id){ r = list[i]; break; }
+  if (!r) return;
+  var note = prompt(ok ? 'Approval note (optional):' : 'Rejection reason:', '');
+  if (note === null && !ok) return;
+  r.status = ok ? 'approved' : 'rejected';
+  r.note = (note||'').trim();
+  /* replace 'waiting' item */
+  r.timeline = r.timeline.filter(function(t){ return t.label !== 'Waiting for approval'; });
+  r.timeline.push({t:nowStamp(), label: ok?'Approved by manager':'Rejected by manager', c: ok?'g':'r'});
+  save(kind==='leave'?K.leaves:K.ot, list);
+  if (kind==='leave'){ renderLeaveHist(); renderLeaveMgmt(); } else { renderOtHist(); renderOtMgmt(); }
+  renderHome();
+  toast((kind==='leave'?'Leave ':'Overtime ')+(ok?'approved':'rejected'));
+}
+
+/* ================= Overtime ================= */
+function otHours(){
+  var s = document.getElementById('otStart').value, e = document.getElementById('otEnd').value;
+  var hint = document.getElementById('otHoursHint');
+  if (s && e){ hint.textContent = 'Overtime duration: ' + fmtDur(hoursBetween(s,e)); }
+  else hint.textContent = '';
+}
+function submitOt(){
+  var date = document.getElementById('otDate').value;
+  var s = document.getElementById('otStart').value;
+  var e = document.getElementById('otEnd').value;
+  var reason = document.getElementById('otReason').value;
+  if (!date){ toast('Pick the overtime date'); return; }
+  if (!s || !e){ toast('Enter starting and ending time'); return; }
+  if (!reason){ toast('Select an overtime reason'); return; }
+  var mins = hoursBetween(s,e);
+  ot.unshift({ id:uid(), date:date, start:s, end:e, hours:Math.round(mins/60*10)/10,
+    reason:reason, desc:document.getElementById('otDesc').value.trim(),
+    status:'pending', note:'', created:nowStamp(),
+    timeline: [{t:nowStamp(), label:'Application submitted', c:''},
+               {t:'', label:'Waiting for approval', c:''}] });
+  save(K.ot, ot);
+  document.getElementById('otDate').value=''; document.getElementById('otStart').value='';
+  document.getElementById('otEnd').value=''; document.getElementById('otReason').value='';
+  document.getElementById('otDesc').value=''; otHours();
+  renderOtHist(); renderOtMgmt();
+  switchTab('ot','hist');
+  toast('Overtime application submitted');
+}
+function renderOtHist(){
+  var el = document.getElementById('ot-hist');
+  if (!ot.length){ el.innerHTML = '<div class="empty"><div class="big">&#9202;</div>No overtime applications yet.</div>'; return; }
+  var html = '';
+  for (var i=0;i<ot.length;i++) html += reqCard(ot[i],'ot',false);
+  el.innerHTML = html;
+}
+function renderOtMgmt(){
+  var pend = ot.filter(function(x){return x.status==='pending';});
+  var el = document.getElementById('otMgmtList');
+  if (!pend.length){ el.innerHTML = '<div class="empty"><div class="big">&#9989;</div>No pending overtime requests.</div>'; return; }
+  var html = '';
+  for (var i=0;i<pend.length;i++) html += reqCard(pend[i],'ot',true);
+  el.innerHTML = html;
+}
+
+/* ================= Roster ================= */
+var calCursor = new Date();
+function renderRoster(){
+  var names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var order = [1,2,3,4,5,6,0];
+  var html = '';
+  for (var i=0;i<order.length;i++){
+    var di = order[i], d = roster.days[di];
+    html += '<div class="ros-day">'
+      + '<span class="dn">'+names[di]+'</span>'
+      + '<label class="switch"><input type="checkbox" id="rosOn'+di+'" '+(d.on?'checked':'')+'><span class="slider"></span></label>'
+      + '<input type="time" id="rosS'+di+'" value="'+d.start+'">'
+      + '<span style="color:var(--muted)">–</span>'
+      + '<input type="time" id="rosE'+di+'" value="'+d.end+'">'
+      + '</div>';
+  }
+  document.getElementById('rosterEditor').innerHTML = html;
+  document.getElementById('rosGrace').value = roster.grace;
+
+  var today = roster.days[new Date().getDay()];
+  document.getElementById('rosToday').innerHTML = today.on
+    ? (today.start+' – '+today.end+' <span class="chip ontime">'+fmtDur(hoursBetween(today.start,today.end))+'</span>')
+    : 'Day off <span class="chip off">Not rostered</span>';
+
+  var wk = 0;
+  for (var j=0;j<7;j++){ var rd = roster.days[j]; if (rd.on) wk += hoursBetween(rd.start,rd.end); }
+  document.getElementById('rosWeekTotal').textContent = 'Rostered hours this week: '+fmtDur(wk);
+  renderCal();
+}
+function saveRoster(){
+  for (var i=0;i<7;i++){
+    roster.days[i] = { on: document.getElementById('rosOn'+i).checked,
+      start: document.getElementById('rosS'+i).value || '09:00',
+      end: document.getElementById('rosE'+i).value || '18:00' };
+  }
+  roster.grace = +document.getElementById('rosGrace').value || 0;
+  save(K.roster, roster);
+  renderRoster();
+  toast('Roster saved');
+}
+function calMove(n){ calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth()+n, 1); renderCal(); }
+function renderCal(){
+  var y = calCursor.getFullYear(), m = calCursor.getMonth();
+  var mo = ['January','February','March','April','May','June','July','August','September','October','November','December'][m];
+  document.getElementById('calTitle').textContent = mo+' '+y;
+  var attMap = {};
+  for (var i=0;i<att.length;i++) attMap[att[i].d] = att[i];
+  var first = new Date(y,m,1).getDay();
+  var dim = new Date(y,m+1,0).getDate();
+  var tk = todayKey();
+  var html = '<tr>', cell = 0;
+  for (var b=0;b<first;b++){ html += '<td></td>'; cell++; }
+  for (var day=1; day<=dim; day++){
+    var key = y+'-'+pad(m+1)+'-'+pad(day);
+    var cls = 'cd';
+    var rd = rosterFor(key);
+    if (rd && rd.on) cls += ' ros';
+    var a = attMap[key];
+    if (a && a.in) cls += a.late ? ' lt' : ' wk';
+    if (key===tk) cls += ' today';
+    html += '<td><div class="'+cls+'">'+day+'</div></td>';
+    cell++;
+    if (cell%7===0 && day<dim) html += '</tr><tr>';
+  }
+  html += '</tr>';
+  document.getElementById('calBody').innerHTML = html;
+}
+
+/* ================= Demo data ================= */
+function loadDemo(){
+  if (!profile.name){
+    profile = {name:'Aisyah Rahman', empId:'EMP-0042', dept:'Human Resources', pos:'HR Executive',
+      email:'aisyah@company.com', phone:'+60 12-345 6789', joined:'2024-03-01'};
+    save(K.profile, profile);
+  }
+  /* attendance: past ~11 weeks following roster, ~15% late */
+  var out = [];
+  var tk = todayKey();
+  for (var back=1; back<=80; back++){
+    var d = new Date(); d.setDate(d.getDate()-back);
+    var key = todayKey(d);
+    var rd = roster.days[d.getDay()];
+    if (!rd.on) continue;
+    var seed = (d.getDate()*7 + d.getMonth()*3 + back) % 20;
+    if (seed === 7) continue; /* occasional absence */
+    var late = seed < 3;
+    var baseIn = minsOf(rd.start) + (late ? 12 + seed*9 : -8 + seed);
+    var baseOut = minsOf(rd.end) + (seed % 4) * 7;
+    var inT = pad(Math.floor(baseIn/60))+':'+pad(baseIn%60);
+    var outT = pad(Math.floor(baseOut/60))+':'+pad(baseOut%60);
+    out.push({d:key, in:inT, out:outT, late:late, loc:null});
+  }
+  /* keep today's real record if any */
+  var todays = att.filter(function(a){ return a.d===tk; });
+  att = todays.concat(out);
+  att.sort(function(a,b){ return a.d<b.d?1:-1; });
+  save(K.att, att);
+
+  if (!leaves.length){
+    var lm = new Date(); lm.setDate(lm.getDate()-24);
+    var lk = todayKey(lm);
+    leaves = [
+      { id:uid(), cat:'Annual Leave', reason:'Travel / vacation', desc:'Family trip to Penang.',
+        from:lk, to:lk, days:1, doc:null, status:'approved', note:'Enjoy your trip!',
+        created:fmtDateShort(lk)+' 10:14',
+        timeline:[{t:fmtDateShort(lk)+' 10:14', label:'Application submitted', c:''},
+                  {t:fmtDateShort(lk)+' 14:02', label:'Approved by manager', c:'g'}] },
+      { id:uid(), cat:'Medical Leave', reason:'Medical appointment', desc:'Dental follow-up.',
+        from:todayKey(new Date(Date.now()+3*86400000)), to:todayKey(new Date(Date.now()+3*86400000)),
+        days:1, doc:{name:'appointment_letter.pdf', size:182272, data:null}, status:'pending', note:'',
+        created:nowStamp(),
+        timeline:[{t:nowStamp(), label:'Application submitted', c:''},
+                  {t:'', label:'Waiting for approval', c:''}] }
+    ];
+    save(K.leaves, leaves);
+  }
+  if (!ot.length){
+    var om = new Date(); om.setDate(om.getDate()-9);
+    var ok2 = todayKey(om);
+    ot = [
+      { id:uid(), date:ok2, start:'18:00', end:'21:30', hours:3.5, reason:'Month-end closing',
+        desc:'Payroll month-end processing.', status:'approved', note:'',
+        created:fmtDateShort(ok2)+' 17:41',
+        timeline:[{t:fmtDateShort(ok2)+' 17:41', label:'Application submitted', c:''},
+                  {t:fmtDateShort(ok2)+' 19:03', label:'Approved by manager', c:'g'}] }
+    ];
+    save(K.ot, ot);
+  }
+  save(K.demo, true);
+  loadAll(); purgeOld();
+  showPage('home');
+  toast('Sample data loaded');
+}
+function clearDemo(){
+  var tk = todayKey();
+  att = att.filter(function(a){ return a.d===tk; });
+  save(K.att, att);
+  leaves = []; save(K.leaves, leaves);
+  ot = []; save(K.ot, ot);
+  save(K.demo, false);
+  loadAll(); renderHome();
+  toast('Sample data cleared');
+}
+function wipeAll(){
+  if (!confirm('Clear ALL app data (profile, attendance, leave, overtime, roster)? This cannot be undone.')) return;
+  for (var k in K) localStorage.removeItem(K[k]);
+  loadAll();
+  showPage('home');
+  toast('All data cleared');
+}
+
+/* ================= Boot ================= */
+loadAll();
+purgeOld();
+syncAutoEvents();
+if (!load(K.init,false)){
+  save(K.init, true);
+  loadDemo();
+} else {
+  renderHome();
+}
+</script>
+</body>
+</html>

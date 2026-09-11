@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Trip Logger</string>
+    <string name="settings">Settings</string>
+    <string name="date_time_label">Date &amp; Time (auto)</string>
+    <string name="trip_time_label">Trip Time</string>
+    <string name="custom_time_hint">Tap to key in time</string>
+    <string name="company_label">Company</string>
+    <string name="driver_label">Driver</string>
+    <string name="add_driver">+ Add</string>
+    <string name="description_label">Description</string>
+    <string name="description_hint">Enter description</string>
+    <string name="save">Save to Google Sheet</string>
+</resources>

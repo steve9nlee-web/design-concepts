@@ -1,0 +1,44 @@
+<resources>
+    <string name="app_name">Vehicle Records</string>
+    <string name="add_vehicle">Add Vehicle</string>
+    <string name="edit_vehicle">Edit Vehicle</string>
+    <string name="empty_hint">No vehicles yet.\nTap + to add your first car, motorcycle or van.</string>
+
+    <string name="plate_no">Plate No</string>
+    <string name="make">Make</string>
+    <string name="model">Model</string>
+    <string name="color">Color</string>
+    <string name="type">Type</string>
+    <string name="type_car">Car</string>
+    <string name="type_motorcycle">Motorcycle</string>
+    <string name="type_van">Van</string>
+
+    <string name="renewals">Renewals</string>
+    <string name="road_tax">Road Tax</string>
+    <string name="insurance">Insurance</string>
+    <string name="inspection">Inspection</string>
+    <string name="renewal_date">Renewal date</string>
+    <string name="cost">Cost</string>
+
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="delete_title">Delete %1$s?</string>
+    <string name="delete_message">This vehicle and its renewal records will be removed.</string>
+    <string name="plate_required">Plate number is required</string>
+
+    <string name="no_details">No details</string>
+    <string name="no_date">No date set</string>
+    <string name="cost_value">Cost: %1$s</string>
+    <string name="days_left">%1$d days left</string>
+    <string name="due_today">Due today</string>
+    <string name="overdue_by">Overdue by %1$d days</string>
+    <string name="renewal_line">%1$s: %2$s</string>
+
+    <string name="notif_channel_name">Renewal reminders</string>
+    <string name="notif_channel_desc">Reminders for road tax, insurance and inspection renewals</string>
+    <string name="notif_title_due">Vehicle renewals due!</string>
+    <string name="notif_title_soon">Vehicle renewals coming up</string>
+    <string name="notif_line_overdue">%1$s %2$s overdue by %3$d days</string>
+    <string name="notif_line_due_today">%1$s %2$s is due today</string>
+    <string name="notif_line_soon">%1$s %2$s due in %3$d days (%4$s)</string>
+</resources>
