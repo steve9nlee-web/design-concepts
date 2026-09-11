@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Idea Capture</string>
+
+    <string name="add_idea">Add idea</string>
+    <string name="new_idea_title">New idea</string>
+    <string name="edit_idea_title">Edit idea</string>
+
+    <string name="label_idea">Idea / Work</string>
+    <string name="hint_idea">Type your idea, or tap the mic to speak</string>
+    <string name="label_description">Description</string>
+    <string name="hint_description">Add more details (optional)</string>
+    <string name="label_status">Status</string>
+
+    <string name="status_urgent">Urgent</string>
+    <string name="status_not_so_urgent">Not so urgent</string>
+    <string name="status_wip">WIP</string>
+    <string name="filter_all">All</string>
+
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="delete_title">Delete idea?</string>
+    <string name="delete_message">Delete \"%1$s\"? This cannot be undone.</string>
+
+    <string name="speak_idea">Speak your idea</string>
+    <string name="speak_description">Speak the description</string>
+    <string name="speech_prompt_idea">Speak your idea in English</string>
+    <string name="speech_prompt_description">Speak the description in English</string>
+    <string name="speech_not_available">Speech recognition is not available on this device</string>
+    <string name="error_idea_required">Please enter or speak your idea first</string>
+
+    <string name="empty_hint">No ideas yet.\nTap + to capture your first idea by typing or voice.</string>
+</resources>
