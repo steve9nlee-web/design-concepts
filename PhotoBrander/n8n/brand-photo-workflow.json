@@ -1,0 +1,132 @@
+{
+  "name": "PhotoBrander - Branded Photo Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brand-photo",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Webhook (from app)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "photobrander-brand-photo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Gemini image-editing request from the app's multipart upload.\n// Expected form fields: photo (file), logo (file, optional),\n// description, company_name, company_details.\nconst item = $input.first();\nconst body = item.json.body || item.json;\n\nif (!item.binary || !item.binary.photo) {\n  throw new Error('No \"photo\" file was uploaded');\n}\n\nconst description = (body.description || '').toString().trim();\nconst companyName = (body.company_name || '').toString().trim();\nconst companyDetails = (body.company_details || '').toString().trim();\nconst hasLogo = !!(item.binary && item.binary.logo);\n\nconst photoBuffer = await this.helpers.getBinaryDataBuffer(0, 'photo');\nconst parts = [\n  {\n    inlineData: {\n      mimeType: item.binary.photo.mimeType || 'image/jpeg',\n      data: photoBuffer.toString('base64'),\n    },\n  },\n];\n\nif (hasLogo) {\n  const logoBuffer = await this.helpers.getBinaryDataBuffer(0, 'logo');\n  parts.push({\n    inlineData: {\n      mimeType: item.binary.logo.mimeType || 'image/png',\n      data: logoBuffer.toString('base64'),\n    },\n  });\n}\n\nlet prompt = 'You are a professional marketing photo editor. ' +\n  'The FIRST image is the source photo uploaded by the user. ';\nif (hasLogo) {\n  prompt += 'The SECOND image is the company logo. ';\n}\nprompt += 'Create a new, polished marketing version of the source photo based on this instruction: \"' +\n  (description || 'enhance the photo for professional marketing use') + '\". ';\nif (hasLogo) {\n  prompt += 'Place the company logo tastefully in a corner of the image, clearly visible but not covering the main subject. ';\n}\nif (companyName) {\n  prompt += 'Add the company name \"' + companyName + '\" as clean, professional text on the image. ';\n}\nif (companyDetails) {\n  prompt += 'Also include these company details in smaller, legible text (for example along the bottom edge): \"' + companyDetails + '\". ';\n}\nprompt += 'Keep all text spelled exactly as given, sharp and readable. Return only the final image.';\n\nparts.push({ text: prompt });\n\nreturn [{\n  json: {\n    requestBody: {\n      contents: [{ parts }],\n      generationConfig: { responseModalities: ['IMAGE'] },\n    },\n  },\n}];"
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Build Gemini Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Gemini Image Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pull the generated image out of the Gemini response and hand it back as binary.\nconst resp = $input.first().json;\nconst parts = resp?.candidates?.[0]?.content?.parts || [];\nconst imagePart = parts.find((p) => p.inlineData && p.inlineData.data);\n\nif (!imagePart) {\n  const reason = resp?.candidates?.[0]?.finishReason || resp?.error?.message || 'unknown';\n  throw new Error('Gemini returned no image (reason: ' + reason + ')');\n}\n\nconst buffer = Buffer.from(imagePart.inlineData.data, 'base64');\nconst binary = await this.helpers.prepareBinaryData(\n  buffer,\n  'branded-photo.png',\n  imagePart.inlineData.mimeType || 'image/png'\n);\n\nreturn [{ json: { success: true }, binary: { data: binary } }];"
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Extract Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Respond to App",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [880, 0]
+    }
+  ],
+  "connections": {
+    "Webhook (from app)": {
+      "main": [
+        [
+          {
+            "node": "Build Gemini Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gemini Request": {
+      "main": [
+        [
+          {
+            "node": "Gemini Image Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Image Generation": {
+      "main": [
+        [
+          {
+            "node": "Extract Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image": {
+      "main": [
+        [
+          {
+            "node": "Respond to App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
