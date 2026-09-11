@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#37474F</color>
+    <color name="primary_dark">#263238</color>
+    <color name="accent">#00897B</color>
+    <color name="screen_background">#F5F5F5</color>
+    <color name="icon_background">#F2F0EB</color>
+
+    <color name="status_urgent">#D32F2F</color>
+    <color name="status_urgent_bg">#FDECEA</color>
+    <color name="status_wip">#F9A825</color>
+    <color name="status_wip_bg">#FFF8E1</color>
+    <color name="status_ok">#C8B78E</color>
+    <color name="status_ok_bg">#F5EFE1</color>
+
+    <color name="status_inactive">#E0E0E0</color>
+    <color name="status_inactive_text">#757575</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#616161</color>
+    <color name="white">#FFFFFF</color>
+    <color name="delete_button">#8D6E63</color>
+</resources>
