@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.VehicleRecords" parent="Theme.Material3.DayNight" />
+</resources>
