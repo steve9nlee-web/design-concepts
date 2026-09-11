@@ -1,0 +1,4 @@
+// Top-level build file (open this folder in Android Studio to build with the official SDK).
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
